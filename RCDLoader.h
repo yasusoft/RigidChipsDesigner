@@ -13,11 +13,11 @@ private:
         bool skipcomment(int fp);
         AnsiString readkey(int fp);
         TRigidChip* procval(int fp, TRigidChipCore *core);
-        TRigidChip* prockey(int fp, TRigidChip *core);
+        TRigidChip* prockey(int fp, TRigidChipCore *core);
         TRigidChip* procbody(int fp, TRigidChip *core);
 public:
         AnsiString ErrorMessage;
-        TRigidChip* Load(AnsiString filename);
+        TRigidChipCore* Load(AnsiString filename);
 };
 //---------------------------------------------------------------------------
 #endif

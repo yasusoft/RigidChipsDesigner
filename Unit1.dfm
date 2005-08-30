@@ -1,9 +1,10 @@
 object Form1: TForm1
-  Left = 192
-  Top = 107
-  Width = 608
-  Height = 517
+  Left = 193
+  Top = 108
+  AutoScroll = False
   Caption = 'RigidChips Designer'
+  ClientHeight = 490
+  ClientWidth = 600
   Color = clBtnFace
   Font.Charset = SHIFTJIS_CHARSET
   Font.Color = clWindowText
@@ -38,18 +39,88 @@ object Form1: TForm1
     Left = 490
     Top = 5
     Width = 105
-    Height = 200
-    Anchors = [akTop, akRight]
+    Height = 480
+    Anchors = [akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 1
+    DesignSize = (
+      105
+      480)
     object ButtonOpen: TButton
       Left = 5
-      Top = 5
+      Top = 0
       Width = 100
       Height = 25
-      Caption = #38283#12369#12504#12477#12398#12468#12510
+      Caption = #38283#12369#12468#12510
       TabOrder = 0
       OnClick = ButtonOpenClick
+    end
+    object ButtonSendRC: TButton
+      Left = 5
+      Top = 35
+      Width = 100
+      Height = 25
+      Caption = 'RigidChips'#12395#35501#36796
+      TabOrder = 1
+      OnClick = ButtonSendRCClick
+    end
+    object EditKeyTest: TEdit
+      Left = 5
+      Top = 460
+      Width = 100
+      Height = 20
+      Anchors = [akLeft, akBottom]
+      ImeMode = imDisable
+      ReadOnly = True
+      TabOrder = 4
+      Text = 'KeyTest'
+      OnKeyDown = EditKeyTestKeyDown
+      OnKeyUp = EditKeyTestKeyUp
+    end
+    object PanelReload: TPanel
+      Left = 5
+      Top = 75
+      Width = 100
+      Height = 70
+      BevelInner = bvRaised
+      BevelOuter = bvLowered
+      TabOrder = 3
+      object LabelReload: TLabel
+        Left = 10
+        Top = 20
+        Width = 71
+        Height = 12
+        Caption = #35469#35672#38291#38548'[ms]'
+        FocusControl = EditReload
+      end
+      object EditReload: TEdit
+        Left = 10
+        Top = 35
+        Width = 80
+        Height = 20
+        ImeMode = imDisable
+        TabOrder = 0
+        Text = '1000'
+      end
+    end
+    object CheckReload: TCheckBox
+      Left = 10
+      Top = 70
+      Width = 85
+      Height = 15
+      Caption = #33258#21205#12522#12525#12540#12489
+      TabOrder = 2
+      OnClick = CheckReloadClick
+    end
+    object CheckGhost: TCheckBox
+      Left = 5
+      Top = 435
+      Width = 80
+      Height = 15
+      Anchors = [akLeft, akBottom]
+      Caption = 'ShowGhost'
+      TabOrder = 5
+      OnClick = CheckGhostClick
     end
   end
   object Timer1: TTimer
@@ -64,5 +135,12 @@ object Form1: TForm1
     Title = 'open'
     Left = 45
     Top = 10
+  end
+  object TimerReload: TTimer
+    Enabled = False
+    Interval = 10000
+    OnTimer = TimerReloadTimer
+    Left = 10
+    Top = 45
   end
 end

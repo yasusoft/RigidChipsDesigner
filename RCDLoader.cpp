@@ -78,7 +78,7 @@ AnsiString TRCDLoader::readkey(int fp)
   return key;
 }
 //---------------------------------------------------------------------------
-TRigidChip* TRCDLoader::Load(AnsiString filename)
+TRigidChipCore* TRCDLoader::Load(AnsiString filename)
 {
   int fp = FileOpen(filename, fmOpenRead);
   if (fp < 0)
@@ -135,13 +135,13 @@ TRigidChip* TRCDLoader::procval(int fp, TRigidChipCore* core)
   FileRead(fp, &c, 1);
   if (c != '{')
   {
-    ErrorMessage = "open bracket must be after body";
+    ErrorMessage = "open bracket must be after val";
     return NULL;
   }
   while (skipsp(fp), skipcomment(fp));
 
   AnsiString key;
-  while ((key = readkey(fp).LowerCase()) != "")
+  while ((key = readkey(fp)) != "")
   {
     FileRead(fp, &c, 1);
     if (c != '(')
@@ -166,9 +166,56 @@ TRigidChip* TRCDLoader::procval(int fp, TRigidChipCore* core)
   return core;
 }
 //---------------------------------------------------------------------------
-TRigidChip* TRCDLoader::prockey(int fp, TRigidChip* core)
+TRigidChip* TRCDLoader::prockey(int fp, TRigidChipCore* core)
 {
-  readto(fp, '}');
+  char c;
+  FileRead(fp, &c, 1);
+  if (c != '{')
+  {
+    ErrorMessage = "open bracket must be after key";
+    return NULL;
+  }
+  while (skipsp(fp), skipcomment(fp));
+
+  AnsiString keyn, var;
+  while ((keyn = readkey(fp)) != "")
+  {
+    FileRead(fp, &c, 1);
+    if (c != ':')
+    {
+      ErrorMessage = ": must be after key number";
+      return NULL;
+    }
+
+    while ((var = readkey(fp)) != "")
+    {
+      FileRead(fp, &c, 1);
+      if (c != '(')
+      {
+        ErrorMessage = "open square bracket must be after variable name";
+        return NULL;
+      }
+      TRigidChipsKey *key = new TRigidChipsKey(core, var, readto(fp, ')'));
+      core->AddKey(keyn, key);
+
+      while (skipsp(fp), skipcomment(fp));
+      FileRead(fp, &c, 1);
+      if (c != ',')
+      {
+        FileSeek(fp, -1, 1);
+        break;
+      }
+    }
+  }
+
+  FileRead(fp, &c, 1);
+  if (c != '}')
+  {
+    ErrorMessage = "close bracket of val was not found";
+    return NULL;
+  }
+  while (skipsp(fp), skipcomment(fp));
+
   return core;
 }
 //---------------------------------------------------------------------------
@@ -260,8 +307,12 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
         chip = new TRigidChipChip;
       else if (key == "frame")
         chip = new TRigidChipFrame;
-      else if (key == "wheel" || key == "rlw")
+      else if (key == "weight")
+        chip = new TRigidChipWeight;
+      else if (key == "wheel")
         chip = new TRigidChipWheel;
+      else if (key == "rlw")
+        chip = new TRigidChipRLW;
       else if (key == "jet")
         chip = new TRigidChipJet;
       else if (key == "rudder")
@@ -272,8 +323,10 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
         chip = new TRigidChipTrim;
       else if (key == "trimf")
         chip = new TRigidChipTrimF;
-      else if (key == "arm" || key == "weight" || key == "cowl")
-        chip = new TRigidChipChip;
+      else if (key == "arm")
+        chip = new TRigidChipArm;
+      else if (key == "cowl")
+        chip = new TRigidChipCowl;
       else
       {
         ErrorMessage = "Unknown chip type (" + key + ")";
