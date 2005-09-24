@@ -8,6 +8,7 @@ class TRigidChipCore;
 class TRCDSaver
 {
 public:
+        bool optObfuscate;
         bool optSpaceAfterBlockType;
         bool optNewLineAfterBlockType;
         bool optSpaceAfterOptions;

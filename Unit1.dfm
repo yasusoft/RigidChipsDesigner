@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 193
-  Top = 108
+  Left = 194
+  Top = 110
   AutoScroll = False
   Caption = 'RigidChips Designer'
   ClientHeight = 490
@@ -14,6 +14,7 @@ object Form1: TForm1
   Menu = MainMenu1
   OldCreateOrder = False
   Position = poScreenCenter
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -42,9 +43,8 @@ object Form1: TForm1
     Top = 5
     Width = 175
     Height = 435
-    ActivePage = TabBody
+    ActivePage = TabPanekit
     Anchors = [akTop, akRight, akBottom]
-    TabIndex = 2
     TabOrder = 4
     OnChange = PageControl1Change
     object TabVal: TTabSheet
@@ -291,7 +291,7 @@ object Form1: TForm1
         Height = 20
         Anchors = [akLeft, akTop, akRight]
         ImeMode = imDisable
-        ItemHeight = 12
+        ItemHeight = 0
         TabOrder = 1
         Text = 'VAR'
       end
@@ -462,7 +462,7 @@ object Form1: TForm1
         ImeMode = imDisable
         ItemHeight = 12
         ParentFont = False
-        TabOrder = 6
+        TabOrder = 7
         OnChange = ComboTypeChange
         Items.Strings = (
           'Chip'
@@ -520,7 +520,7 @@ object Form1: TForm1
         ScrollBars = ssVertical
         Strings.Strings = (
           '=')
-        TabOrder = 7
+        TabOrder = 8
         TitleCaptions.Strings = (
           'Key'
           'Value')
@@ -539,7 +539,7 @@ object Form1: TForm1
         Caption = 'R'
         Checked = True
         State = cbChecked
-        TabOrder = 8
+        TabOrder = 6
       end
     end
     object TabScript: TTabSheet
@@ -598,6 +598,103 @@ object Form1: TForm1
         ImeMode = imDisable
         ItemHeight = 12
         TabOrder = 2
+      end
+    end
+    object TabPanekit: TTabSheet
+      Caption = 'Panekit'
+      ImageIndex = 4
+      TabVisible = False
+      object ListPanekit: TListBox
+        Left = 0
+        Top = 50
+        Width = 167
+        Height = 238
+        Align = alClient
+        Font.Charset = SHIFTJIS_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = #65325#65331' '#12468#12471#12483#12463
+        Font.Style = []
+        ItemHeight = 12
+        ParentFont = False
+        TabOrder = 0
+        OnClick = ListPanekitClick
+      end
+      object PanelPanekit: TPanel
+        Left = 0
+        Top = 0
+        Width = 167
+        Height = 50
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 1
+        DesignSize = (
+          167
+          50)
+        object LabelPanekitFile: TLabel
+          Left = 5
+          Top = 10
+          Width = 19
+          Height = 12
+          Caption = 'File'
+          FocusControl = EditPanekitFile
+        end
+        object EditPanekitFile: TEdit
+          Left = 30
+          Top = 5
+          Width = 115
+          Height = 20
+          Anchors = [akLeft, akTop, akRight]
+          Font.Charset = SHIFTJIS_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -12
+          Font.Name = #65325#65331' '#12468#12471#12483#12463
+          Font.Style = []
+          ImeMode = imDisable
+          ParentFont = False
+          ReadOnly = True
+          TabOrder = 0
+        end
+        object ButtonPanekitBrowse: TButton
+          Left = 145
+          Top = 5
+          Width = 20
+          Height = 20
+          Anchors = [akTop, akRight]
+          Caption = '...'
+          TabOrder = 1
+          OnClick = ButtonPanekitBrowseClick
+        end
+        object CheckPanekitTruly: TCheckBox
+          Left = 75
+          Top = 30
+          Width = 90
+          Height = 15
+          Anchors = [akTop, akRight]
+          Caption = 'Convert Truly'
+          Checked = True
+          State = cbChecked
+          TabOrder = 2
+          OnClick = CheckPanekitTrulyClick
+        end
+      end
+      object MemoPanekit: TMemo
+        Left = 0
+        Top = 288
+        Width = 167
+        Height = 120
+        Align = alBottom
+        Font.Charset = SHIFTJIS_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = #65325#65331' '#12468#12471#12483#12463
+        Font.Style = []
+        ImeMode = imDisable
+        ParentFont = False
+        ReadOnly = True
+        ScrollBars = ssVertical
+        TabOrder = 2
+        WantReturns = False
       end
     end
   end
@@ -706,7 +803,7 @@ object Form1: TForm1
         OnClick = KeyNewClick
       end
       object KeyOpen: TMenuItem
-        Caption = '&Open'
+        Caption = '&Open...'
         ShortCut = 16463
         OnClick = KeyOpenClick
       end
@@ -716,10 +813,17 @@ object Form1: TForm1
         OnClick = KeySaveClick
       end
       object KeySaveAs: TMenuItem
-        Caption = 'Save&As'
+        Caption = 'Save&As...'
         OnClick = KeySaveAsClick
       end
       object KeyFileBar1: TMenuItem
+        Caption = '-'
+      end
+      object KeyImport: TMenuItem
+        Caption = 'Import &Panekit...'
+        OnClick = KeyImportClick
+      end
+      object KeyFileBar2: TMenuItem
         Caption = '-'
       end
       object KeyExit: TMenuItem
@@ -778,9 +882,18 @@ object Form1: TForm1
     end
     object KeyOption: TMenuItem
       Caption = '&Option'
+      object KeySelectAdd: TMenuItem
+        Caption = 'Select AddChip'
+        Checked = True
+        OnClick = KeySelectAddClick
+      end
       object KeyOptSave: TMenuItem
         Caption = '&Save'
         OnClick = KeyOptSaveClick
+        object KeySaveObfuscate: TMenuItem
+          Caption = 'Obfuscate'
+          OnClick = KeySaveOptionClick
+        end
         object KeySpaceBlock: TMenuItem
           Caption = 'Space after BlockType'
           OnClick = KeySaveOptionClick
@@ -810,7 +923,7 @@ object Form1: TForm1
     object Help1: TMenuItem
       Caption = '&Help'
       object KeyAbout: TMenuItem
-        Caption = '&About'
+        Caption = '&About...'
         OnClick = KeyAboutClick
       end
     end
@@ -965,5 +1078,12 @@ object Form1: TForm1
       Caption = 'Cowl'
       OnClick = KeyAddChipClick
     end
+  end
+  object OpenDialogPanekit: TOpenDialog
+    Filter = 'PS'#12513#12514#12522#12501#12449#12452#12523'|*.ps;*.psx;*.mem;*.mc;*.mc?|'#12377#12409#12390#12398#12501#12449#12452#12523'(*.*)|*.*'
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
+    Title = 'Load PANEKIT'
+    Left = 115
+    Top = 85
   end
 end

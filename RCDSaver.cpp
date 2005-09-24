@@ -11,6 +11,7 @@
 //---------------------------------------------------------------------------
 TRCDSaver::TRCDSaver()
 {
+  optObfuscate = false;
   optSpaceAfterBlockType = false;
   optNewLineAfterBlockType = true;
   optSpaceAfterOptions = true;
@@ -75,6 +76,14 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
     str += " { }\n";
   else
     str += "{}\n";
+
+  if (optObfuscate)
+  {
+    str = StringReplace(str, " ", "", TReplaceFlags() << rfReplaceAll);
+    str = StringReplace(str, "\t", "", TReplaceFlags() << rfReplaceAll);
+    str = StringReplace(str, "\r", "", TReplaceFlags() << rfReplaceAll);
+    str = StringReplace(str, "\n", "", TReplaceFlags() << rfReplaceAll);
+  }
 
   return str;
 }
@@ -175,6 +184,16 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
     // Body
     lines->Add("Body" + aftertype + "{");
     lines->Add(ChipToString("", core) + "}");
+
+    if (optObfuscate)
+    {
+      AnsiString str = lines->Text;
+      str = StringReplace(str, " ", "", TReplaceFlags() << rfReplaceAll);
+      str = StringReplace(str, "\t", "", TReplaceFlags() << rfReplaceAll);
+      str = StringReplace(str, "\r", "", TReplaceFlags() << rfReplaceAll);
+      str = StringReplace(str, "\n", "", TReplaceFlags() << rfReplaceAll);
+      lines->Text = str;
+    }
 
     // Script or Lua
     if (core->Script->ScriptText != "")

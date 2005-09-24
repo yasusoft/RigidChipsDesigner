@@ -7,8 +7,10 @@
 #include "RigidChip.h"
 #include "RCDLoader.h"
 #include "RCDSaver.h"
-#include <Clipbrd.hpp>
 #include "RCScript.h"
+#include <IniFiles.hpp>
+#include <Clipbrd.hpp>
+#include <stack>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -136,21 +138,21 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   glEnable(GL_DEPTH_TEST);
 
   // Lighting
-  GLfloat col[] = {1, 1, 1, 1};
+  GLfloat col0[] = {0, 0, 0, 1};
+  GLfloat col1[] = {1, 1, 1, 1};
   glEnable(GL_LIGHTING);
-  // ambient
-  glLightfv(GL_LIGHT0 , GL_AMBIENT , col);
+  // light0
+  GLfloat pos0[] = {0, 0, 1000, 1};
+  glLightfv(GL_LIGHT0, GL_AMBIENT, col1);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, col1);
+  glLightfv(GL_LIGHT0, GL_POSITION, pos0);
   glEnable(GL_LIGHT0);
-  // diffuse1
-  GLfloat pos1[] = {0, 0, 1000, 1};
-  glLightfv(GL_LIGHT1 , GL_DIFFUSE , col);
-  glLightfv(GL_LIGHT1 , GL_POSITION , pos1);
-  glEnable(GL_LIGHT1);
   // diffuse2
-  GLfloat pos2[] = {0, 0, -1000, 1};
-  glLightfv(GL_LIGHT2 , GL_DIFFUSE , col);
-  glLightfv(GL_LIGHT2 , GL_POSITION , pos2);
-  glEnable(GL_LIGHT2);
+  GLfloat pos1[] = {0, 0, -1000, 1};
+  glLightfv(GL_LIGHT1, GL_AMBIENT, col0);
+  glLightfv(GL_LIGHT1, GL_DIFFUSE, col1);
+  glLightfv(GL_LIGHT1, GL_POSITION, pos1);
+  glEnable(GL_LIGHT1);
 
   // Textures
   Graphics::TBitmap *bmp = new Graphics::TBitmap;
@@ -212,6 +214,26 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   }
   if (Core == NULL)
     KeyNewClick(Sender);
+
+  TIniFile *ini = NULL;
+  try
+  {
+    ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
+    KeySelectAdd->Checked = ini->ReadBool("Option", "SelectAdd", KeySelectAdd->Checked);
+    RCDSaver->optObfuscate = ini->ReadBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
+    RCDSaver->optSpaceAfterBlockType = ini->ReadBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
+    RCDSaver->optNewLineAfterBlockType = ini->ReadBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
+    RCDSaver->optSpaceAfterOptions = ini->ReadBool("OptionSave", "SpaceOption", RCDSaver->optSpaceAfterOptions);
+    RCDSaver->optNewLineAfterOptions = ini->ReadBool("OptionSave", "NewLineOption", RCDSaver->optNewLineAfterOptions);
+    RCDSaver->optSpaceAfterComma = ini->ReadBool("OptionSave", "SpaceComma", RCDSaver->optSpaceAfterComma);
+    RCDSaver->optNoSubNoNewLine = ini->ReadBool("OptionSave", "NoSubNoNewLine", RCDSaver->optNoSubNoNewLine);
+    delete ini;
+  }
+  catch (...)
+  {
+    if (ini)
+      delete ini;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::FormDestroy(TObject *Sender)
@@ -228,6 +250,29 @@ void __fastcall TForm1::FormDestroy(TObject *Sender)
 
   delete RCDSaver;
   delete RCDLoader;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::FormClose(TObject *Sender, TCloseAction &Action)
+{
+  TIniFile *ini = NULL;
+  try
+  {
+    ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
+    ini->WriteBool("Option", "SelectAdd", KeySelectAdd->Checked);
+    ini->WriteBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
+    ini->WriteBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
+    ini->WriteBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
+    ini->WriteBool("OptionSave", "SpaceOption", RCDSaver->optSpaceAfterOptions);
+    ini->WriteBool("OptionSave", "NewLineOption", RCDSaver->optNewLineAfterOptions);
+    ini->WriteBool("OptionSave", "SpaceComma", RCDSaver->optSpaceAfterComma);
+    ini->WriteBool("OptionSave", "NoSubNoNewLine", RCDSaver->optNoSubNoNewLine);
+    delete ini;
+  }
+  catch (...)
+  {
+    if (ini)
+      delete ini;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::FormCloseQuery(TObject *Sender, bool &CanClose)
@@ -596,6 +641,57 @@ void __fastcall TForm1::EditKeyTestKeyDown(TObject *Sender, WORD &Key,
     case 'Q': case 'q': KeysDown[14] = f; break;
     case 'W': case 'w': KeysDown[15] = f; break;
     case 'E': case 'e': KeysDown[16] = f; break;
+
+    case 'K': // ÉJÉÅÉâÇ™è„ï˚å¸Ç÷âÒì]
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glLoadIdentity();
+      glRotated(15, 1, 0, 0);
+      glMultMatrixd(camera_matrix);
+      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
+      glPopMatrix();
+      Display();
+      break;
+    case 'L': // ÉJÉÅÉâÇ™â∫ï˚å¸Ç÷âÒì]
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glLoadIdentity();
+      glRotated(-15, 1, 0, 0);
+      glMultMatrixd(camera_matrix);
+      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
+      glPopMatrix();
+      Display();
+      break;
+    case 0xBC/*KEY_OEM_COMMA*/: // ÉJÉÅÉâÇ™ç∂ï˚å¸Ç÷âÒì]
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glLoadIdentity();
+      glRotated(15, 0, 1, 0);
+      glMultMatrixd(camera_matrix);
+      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
+      glPopMatrix();
+      Display();
+      break;
+    case 0xBE/*KEY_OEM_PERIOD*/: // ÉJÉÅÉâÇ™âEï˚å¸Ç÷âÒì]
+      glMatrixMode(GL_MODELVIEW);
+      glPushMatrix();
+      glLoadIdentity();
+      glRotated(-15, 0, 1, 0);
+      glMultMatrixd(camera_matrix);
+      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
+      glPopMatrix();
+      Display();
+      break;
+    case 'I': case 'i': // ägëÂ
+      if (camera_z > -25)
+        camera_z -= camera_z > 0 ? camera_z * 0.5 + 1 : 5;
+      Display();
+      break;
+    case 'O': case 'o': // èkè¨
+      if (camera_z < 250)
+        camera_z += camera_z > 0 ? camera_z * 0.5 + 1 : 5;
+      Display();
+      break;
   }
 }
 //---------------------------------------------------------------------------
@@ -627,9 +723,7 @@ void __fastcall TForm1::EditKeyTestKeyUp(TObject *Sender, WORD &Key,
 //---------------------------------------------------------------------------
 void __fastcall TForm1::TimerReloadTimer(TObject *Sender)
 {
-  if (FileName == "")
-    return;
-  if (Modify)
+  if (FileName == "" || Modify)
   {
     TimerReload->Enabled = false;
     KeyAutoReload->Checked = false;
@@ -910,7 +1004,8 @@ void __fastcall TForm1::KeyNewClick(TObject *Sender)
   FileName = "";
   Modify = false;
   PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
-  PageControl1->ActivePage = TabBody;
+  if (PageControl1->ActivePage != TabPanekit)
+    PageControl1->ActivePage = TabBody;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOpenClick(TObject *Sender)
@@ -981,8 +1076,17 @@ void __fastcall TForm1::KeySaveAsClick(TObject *Sender)
   if (SaveDialog->Execute())
   {
     FileName = SaveDialog->FileName;
+    if (ExtractFileExt(FileName) == "")
+      FileName = FileName + ".rcd";
     KeySaveClick(Sender);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyImportClick(TObject *Sender)
+{
+  KeyNewClick(Sender);
+  if (Modify) return;
+  PageControl1->ActivePage = TabPanekit;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyExitClick(TObject *Sender)
@@ -1008,8 +1112,14 @@ void __fastcall TForm1::KeyAutoReloadClick(TObject *Sender)
   TimerReload->Tag = 0;
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::KeySelectAddClick(TObject *Sender)
+{
+  KeySelectAdd->Checked = !KeySelectAdd->Checked;
+}
+//---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOptSaveClick(TObject *Sender)
 {
+  KeySaveObfuscate->Checked = RCDSaver->optObfuscate;
   KeySpaceBlock->Checked = RCDSaver->optSpaceAfterBlockType;
   KeyNLBlock->Checked = RCDSaver->optNewLineAfterBlockType;
   KeySpaceOpt->Checked = RCDSaver->optSpaceAfterOptions;
@@ -1021,6 +1131,7 @@ void __fastcall TForm1::KeyOptSaveClick(TObject *Sender)
 void __fastcall TForm1::KeySaveOptionClick(TObject *Sender)
 {
   ((TMenuItem*)Sender)->Checked = !((TMenuItem*)Sender)->Checked;
+  RCDSaver->optObfuscate = KeySaveObfuscate->Checked;
   RCDSaver->optSpaceAfterBlockType = KeySpaceBlock->Checked;
   RCDSaver->optNewLineAfterBlockType = KeyNLBlock->Checked;
   RCDSaver->optSpaceAfterOptions = KeySpaceOpt->Checked;
@@ -1053,6 +1164,10 @@ void __fastcall TForm1::KeyUndoClick(TObject *Sender)
 {
   if (!Core || !Core->Deleted) return;
   Core->Deleted->Parent->AddSubChip(Core->Deleted);
+  if (KeySelectAdd->Checked)
+    SelectionChange(Core->Deleted);
+  else
+    SelectionChange(Core->Select);
   Core->Deleted = NULL;
 }
 //---------------------------------------------------------------------------
@@ -1096,7 +1211,10 @@ void __fastcall TForm1::KeyPasteClick(TObject *Sender)
   if (Direction != rdCore)
     chip->Direction = Direction;
   Core->Select->AddSubChip(chip);
-  SelectionChange(Core->Select);
+  if (KeySelectAdd->Checked)
+    SelectionChange(chip);
+  else
+    SelectionChange(Core->Select);
   Modify = true;
 }
 //---------------------------------------------------------------------------
@@ -1239,7 +1357,10 @@ void __fastcall TForm1::KeyAddChipClick(TObject *Sender)
       chip->Direction = Direction;
     Core->Select->AddSubChip(chip);
   }
-  SelectionChange(Core->Select);
+  if (KeySelectAdd->Checked)
+    SelectionChange(chip);
+  else
+    SelectionChange(Core->Select);
   Modify = true;
 }
 //---------------------------------------------------------------------------
@@ -1432,6 +1553,750 @@ void __fastcall TForm1::ButtonScriptResetClick(TObject *Sender)
 void __fastcall TForm1::ButtonScriptStopClick(TObject *Sender)
 {
   RunScript = false;
+}
+//---------------------------------------------------------------------------
+int CheckPanekitFile(int fp)
+{ // ÉpÉlÉLÉbÉgÇÃÉtÉ@ÉCÉãÇ©É`ÉFÉbÉN
+  char c;
+
+  char *match = "SC\x13\x04ÉpÉlÉLÉbÉg";
+  int len = AnsiString(match).Length();
+  int pos = 0;
+  // matchï∂éöóÒÇíTÇµÇ»Ç™ÇÁÉXÉLÉbÉv
+  while (FileRead(fp, &c, 1) == 1)
+  {
+    if (c == match[pos])
+    {
+      pos ++;
+      if (pos == len)
+        break;
+    }
+    else
+    {
+      FileSeek(fp, -pos, 1);
+      pos = 0;
+    }
+  }
+
+  if (pos != len)
+  {
+    FileSeek(fp, -pos, 1);
+    return -1;
+  }
+  return FileSeek(fp, -pos, 1);
+}
+const char* const PanekitStringMap1 =
+"Å@??????????????????????????????ÇOÇPÇQÇRÇSÇTÇUÇVÇWÇX??????????????Ç`ÇaÇbÇcÇdÇeÇfÇgÇhÇiÇjÇkÇlÇmÇn"
+"ÇoÇpÇqÇrÇsÇtÇuÇvÇwÇxÇyÇaÇbÇcÇdÇe??ÇÅÇÇÇÉÇÑÇÖÇÜÇáÇàÇâÇäÇãÇåÇçÇéÇèÇêÇëÇíÇìÇîÇïÇñÇóÇòÇôÇö??????????"
+"ÇüÇ†Ç°Ç¢Ç£Ç§Ç•Ç¶ÇßÇ®Ç©Ç™Ç´Ç¨Ç≠ÇÆÇØÇ∞Ç±Ç≤Ç≥Ç¥ÇµÇ∂Ç∑Ç∏ÇπÇ∫ÇªÇºÇΩÇæÇøÇ¿Ç¡Ç¬Ç√ÇƒÇ≈Ç∆Ç«Ç»Ç…Ç ÇÀÇÃÇÕÇŒ"
+"ÇœÇ–Ç—Ç“Ç”Ç‘Ç’Ç÷Ç◊ÇÿÇŸÇ⁄Ç€Ç‹Ç›ÇﬁÇﬂÇ‡Ç·Ç‚Ç„Ç‰ÇÂÇÊÇÁÇËÇÈÇÍÇÎÇÏÇÌÇÓÇÔÇÇÒÉ@ÉAÉBÉCÉDÉEÉFÉGÉHÉIÉJÉKÉL"
+"ÉMÉNÉOÉPÉQÉRÉSÉTÉUÉVÉWÉXÉYÉZÉ[É\É]É^É_É`ÉaÉbÉcÉdÉeÉfÉgÉhÉiÉjÉkÉlÉmÉnÉoÉpÉqÉrÉsÉtÉuÉvÇ÷Ç◊ÇÿÉzÉ{É|"
+"É}É~??ÉÄÉÅÉÇÉÉÉÑÉÖÉÜÉáÉàÉâÉäÉãÉåÉçÉéÉèÉêÉëÉíÉìÉîÉïÉñÅAÅBÅCÅDÅEÅFÅGÅHÅIÅJÅãÅLÅMÅNÅOÅPÅQÅRÅSÅTÅUÅV"
+"ÅWÅXÅYÅZÅ[Å\Å]Å^Å_Å`ÅaÅbÅcÅdÅeÅfÅgÅhÅiÅjÅkÅlÅmÅnÅoÅpÅqÅrÅsÅtÅuÅvÅwÅxÅyÅzÅ{Å|Å}Å~??ÅÄÅÅÅÇÅÉÅÑÅÖÅÜ"
+"ÅáÅàÅâÅäÅãÅåÅçÅéÅèÅêÅëÅíÅìÅîÅïÅñÅóÅòÅôÅöÅõÅúÅùÅûÅüÅ†Å°Å¢Å£Å§Å•Å¶ÅßÅ®Å©Å™Å´Å¨????????áTáUáVáWáXáY"
+"áZá[á\á]??àÍìÒéOélå‹òZéµî™ã„è\ïSêÁñúóÎàÎìÛéQåﬁèE‰›çbâ≥ï∏íöëOå„ç∂âEè„â∫ëÂè¨çÇí·ì‡äOëΩè≠èdåyíÜâüà¯"
+"çUñhéËë´ó§äCãÛì˙åéâŒêÖñÿã‡ìyínïóó—éRïƒïßà…ì∆òIê^â¸êVãåëÊèâë‡çÜä€î≈î‘å^éÆé‘ã@ïîëïîÚçsêÌóºópìÆóÕéé"
+"çÏédólëñ??à≥ìäê˘âÒí@â~ïtâõêÇêSå¸ê°å`ê≥é¿éÂïΩïêã≠é„âªìSã‚ì∫ïÛëDí¯ìáâpêlåıêÍñ≥ìGì`ê‡ç|ê_ì¨ó≥í¥ãÜã…"
+"ç∞ê‘úaêØïKéEâeâFíàîEé“âˆèbã∞ó¥éÇëÈòhé÷ì¯ãSînå~å’ñPôÄãÁòTñÇñ@ãRémódê∏ãâäÔñ`åØñªéÙîjóãêπê∂ñΩà≈éÄîe"
+"â§çcíÈégìkè´ç≤à—åRëÇí∑ìôï∫çgê¬ëìâ©óŒéáìçîíçïètâƒèHì~ìåêºìÏñkï\ó†ìsï{åßåSésãÊí¨ë∫íjèóä‘ñÏãÖãêç„èc"
+"â°ïlçLñ{ï®ícëÃâìãﬂë±äÕë≈éÁåÏãtì]åïäZëÑèÇïÄã|ñÓâäïXèeâÂâºñ óÉäkäÌåùòréqãÿì˜ñæé°è∫òaï˚ê¨ç]åÀå√ë„å¥"
+"énñ¢óàîNéûï™ïbñÈèIññã~ã}èïãŸî≠êiã´å¿âÕèpåxé@ëæòYê’ëÅë¨ñ≤Â≥âÍìVóvç«à§àüåÇïïàÛîöóÙíeçÑïPî¸ñ°ÂjóVñK"
+"ì±ä@âπåÉãÏíZ??ãûçëóEóYå≥ëcâ∆é•çáêgíÍòAë∑åÂê´åàê‚ëŒïsévãcå`éñóHóÏê”îCååë∞äyìÔëØånåQãPèuçrë¢ìπëMäÎ"
+"éaêwîÈñßçñë†ävå∂òfóêéÎâiì¡óÛéæéüïãçíéëgïYó¨ã†çπèüóòì™âıåÜèˆãCà£ï|äøç˜âÿâ‘ìíàŸìlîRé‹îMì‰â»äwç≈ãI"
+"ñºì}çãózìdî]ê¢äEè’ëNã•ã¡????????"
+;
+const char* const PanekitStringMap2 =
+"L2R2L1R1Å¢ÅõÅ~Å†Å™Å®Å´Å©Å†ÅﬂÉ∂ÑG"
+"ÇoÇwÇxÇyÇlÇsÇiÇrÇb??????????????"
+;
+AnsiString ReadPanekitString(int fp, int len)
+{
+  AnsiString n;
+  bool pre = true;
+  unsigned char c1, c2;
+  int i;
+  while (len-- > 0 && FileRead(fp, &c1, 1) == 1)
+  {
+    if (pre)
+    {
+      if (len-- <= 0 || FileRead(fp, &c2, 1) != 1) return n;
+      i = (c1 << 4) | (c2 >> 4);
+    }
+    else
+    {
+      i = ((c2 & 0xF) << 8) | c1;
+    }
+    if (i < 0x340)
+    {
+      i *= 2;
+      n += AnsiString(PanekitStringMap1[i]) + AnsiString(PanekitStringMap1[i+1]);
+    }
+    else if (0x400 <= i && i < 0x420)
+    {
+      i = (i - 0x400) * 2;
+      n += AnsiString(PanekitStringMap2[i]) + AnsiString(PanekitStringMap2[i+1]);
+    }
+    pre = !pre;
+  }
+  return n;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ButtonPanekitBrowseClick(TObject *Sender)
+{
+  OpenDialogPanekit->FileName = EditPanekitFile->Text;
+  if (!OpenDialogPanekit->Execute())
+    return;
+  
+  EditPanekitFile->Text = OpenDialogPanekit->FileName;
+
+  if (EditPanekitFile->Text == "")
+  {
+    Application->MessageBox("Select panekit file", "LoadList", MB_OK | MB_ICONINFORMATION);
+    return;
+  }
+
+  ListPanekit->Items->Clear();
+  MemoPanekit->Lines->Clear();
+
+  int fp = FileOpen(EditPanekitFile->Text, fmOpenRead | fmShareDenyWrite);
+  if (fp == -1)
+  {
+    Application->MessageBox("Can't open panekit file", "LoadList", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  int pos = CheckPanekitFile(fp);
+  if (pos == -1)
+  {
+    FileClose(fp);
+    Application->MessageBox("This file is not panekit file", "LoadList", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  FileSeek(fp, 0x600, 1);
+
+  // ñºëOÇÃì«Ç›çûÇ›
+  for (int i = 0; i < 32; i ++)
+  {
+    AnsiString n = ReadPanekitString(fp, 15);
+    if (n == "") n = "-";
+    ListPanekit->Items->Add(n);
+  }
+
+  // Ç´ÇÎÇ≠ë§ÉÇÉfÉã
+  FileSeek(fp, pos, 0);
+  FileSeek(fp, 0x800, 1);
+  FileSeek(fp, 0x380, 1);
+  AnsiString n;
+  for (int i = 0; i < 10; i ++)
+  {
+    unsigned short c;
+    FileRead(fp, &c, 2);
+    if (c < 0x340)
+    {
+      c *= 2;
+      n += AnsiString(PanekitStringMap1[c]) + AnsiString(PanekitStringMap1[c+1]);
+    }
+    else if (0x400 <= c && c < 0x420)
+    {
+      c = (i - 0x400) * 2;
+      n += AnsiString(PanekitStringMap2[c]) + AnsiString(PanekitStringMap2[c+1]);
+    }
+  }
+  ListPanekit->Items->Add(n);
+
+  FileClose(fp);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ListPanekitClick(TObject *Sender)
+{
+  KeyNewClick(Sender);
+  if (Modify)
+  {
+    ListPanekit->ItemIndex = -1;
+    return;
+  }
+
+  MemoPanekit->Lines->Clear();
+
+  if (ListPanekit->ItemIndex == -1 || ListPanekit->Items->Strings[ListPanekit->ItemIndex] == "-")
+    return;
+
+  if (EditPanekitFile->Text == "")
+  {
+    ListPanekit->Items->Clear();
+    Application->MessageBox("Select panekit file", "LoadModel", MB_OK | MB_ICONINFORMATION);
+    return;
+  }
+
+  int fp = FileOpen(EditPanekitFile->Text, fmOpenRead | fmShareDenyWrite);
+  if (fp == -1)
+  {
+    ListPanekit->Items->Clear();
+    Application->MessageBox("Can't open panekit file", "LoadModel", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  if (CheckPanekitFile(fp) == -1)
+  {
+    FileClose(fp);
+    ListPanekit->Items->Clear();
+    Application->MessageBox("This file is not panekit file", "LoadModel", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  if (ListPanekit->ItemIndex < 32)
+  { // ÉÅÉÇÉäÉÇÉfÉã
+    FileSeek(fp, 0x1000, 1);
+    FileSeek(fp, 0x380 * ListPanekit->ItemIndex, 1);
+  }
+  else
+  { // Ç´ÇÎÇ≠ë§ÉÇÉfÉã
+    FileSeek(fp, 0x800, 1);
+  }
+  
+  // ÉoÅ[ÉWÉáÉì
+  FileSeek(fp, 4, 1);
+  // ÉGÉfÉBÉbÉgâÒêî
+  FileSeek(fp, 4, 1);
+  // ÉGÉfÉBÉbÉgéûä‘[1/60s]
+  FileSeek(fp, 4, 1);
+  // ÅH
+  FileSeek(fp, 4, 1);
+
+  // ÉRÉAèÓïÒÅ{É{É^ÉìégópÉtÉâÉO
+  unsigned char coreflag;
+  FileRead(fp, &coreflag, 1);
+  int corecon = coreflag & 0xF;
+  // É{É^ÉìégópÉtÉâÉO
+  FileSeek(fp, 1, 1);
+  // äeÉpÅ[Écégópñáêî
+  FileSeek(fp, 9, 1);
+
+  // äeÉpÅ[ÉcèÓïÒ 7bytes x 99
+  int angles[] = {
+        0, -165, -150, -135, -120, -105, -90, -75, -60, -45, -30, -15,
+        0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165,
+  };
+  int colors[] = {
+        0xC0C0C0, 0x808080, 0x404040, 0x202020,
+        0xFF2020, 0xFF0000, 0x800000, 0x402020,
+        0x400000, 0x802000, 0xC0A080, 0xC08000,
+        0xFF8000, 0xA08000, 0xA0A000, 0x80A000,
+        0x002000, 0x004000, 0x408000, 0x008000,
+        0x004040, 0x008040, 0x00A080, 0x8080A0,
+        0x202040, 0x404080, 0x4040C0, 0x000000,
+        0x402040, 0x802080, 0x804080, 0xFF80A0,
+  };
+  int buttons[] = {
+        7,  // L2Å®A
+        12, // R2Å®F
+        8,  // L1Å®S
+        9,  // R1Å®D
+        10, // Å¢Å®V
+        6,  // ÅõÅ®C
+        5,  // Å~Å®X
+        4,  // Å†Å®Z
+        -1, -1, -1, -1,
+        0,  // Å™
+        3,  // Å®
+        1,  // Å´
+        2,  // Å©
+  };
+  AnsiString err;
+  std::stack<TRigidChip*> stackChip;
+  std::stack<int> stackCon;
+  std::stack<bool> stackInvertNS, stackInvertWE;
+  for (int i = 0; err == ""; )
+  {
+    TRigidChipsDirection dir;
+    TRigidChip *parent = Core;
+    if (corecon & 1)
+    {
+      dir = rdNorth;
+      corecon &= ~1;
+    }
+    else if (corecon & 2)
+    {
+      dir = rdEast;
+      corecon &= ~2;
+    }
+    else if (corecon & 4)
+    {
+      dir = rdSouth;
+      corecon &= ~4;
+    }
+    else if (corecon & 8)
+    {
+      dir = rdWest;
+      corecon &= ~8;
+    }
+    else // if (dir == rdCore)
+    {
+      FileSeek(fp, (99-i)*7, 1);
+      break;
+    }
+    
+    const TRigidChipsDirection dirmap[2][2][5] = {
+      { // invertNS = false
+        {rdCore, rdNorth, rdEast, rdSouth, rdWest}, // invertWE = false
+        {rdCore, rdNorth, rdWest, rdSouth, rdEast}, // invertWE = true
+      },
+      {
+        {rdCore, rdSouth, rdEast, rdNorth, rdWest}, // invertWE = false
+        {rdCore, rdSouth, rdWest, rdNorth, rdEast}, // invertWE = true
+      },
+    };
+    bool invertNS = false, invertWE = false;
+    
+    while (i++ < 99)
+    {
+      TRigidChip *chip;
+      unsigned char data[7];
+      FileRead(fp, data, 7);
+
+      // ê⁄ë±èÛë‘(0:Ç»Çµ 1:íºêi, 2:âE 4:ç∂ Ç…ê⁄ë±Ç†ÇË)ÇÃò_óùòa
+      int con = data[0] >> 4;
+
+      // äpìx
+      int angle = data[3] & 0x1F;
+      angle = angle < 24 ? angles[angle] : 0;
+      if (!(invertNS ^ invertWE)) // PANEKITÇ∆RCÇÕãt
+        angle *= -1;
+
+      // É{É^Éì
+      int button[] = {8,
+        data[1]&0xF,
+        data[1]>>4,
+        data[2]&0xF,
+        data[2]>>4,
+      };
+      for (int j = 0; j < 5; j ++)
+        button[j] = button[j] < 0x10 ? buttons[button[j]] : -1;
+      // ÉpÉâÉÅÅ[É^(ÉpÉlÉãà»äO)
+      int param[] = {
+        ((data[3]&0xC0)>>3) | (data[6]>>5),
+        data[4] & 0x1F,
+        ((data[5]&3)<<3) | (data[4]>>5),
+        (data[5]>>2) & 0x1F,
+        data[6] & 0x1F,
+      };
+      int hold = data[5]>>7;
+
+      AnsiString opt;
+
+      // ÉpÅ[ÉcéÌóﬁ
+      int type = data[0] & 0xF;
+      if (type == 2)
+      { // ÉpÉlÉã
+        // êF
+        int color = data[4];
+        color = color < 0x20 ? colors[color] : 0xFFFFFF;
+
+        // ïø
+        // chip[5];
+        // 0x80
+        // chip[6];
+
+        chip = new TRigidChipChip;
+        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+        if (color != 0xFFFFFF) opt += AnsiString(opt != "" ? "," : "") + "color=#" + IntToHex(color,6);
+      }
+      else if (type == 3)
+      { // XÉWÉáÉCÉìÉg
+        // Å´è¸ÇË
+        chip = new TRigidChipChip;
+        if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+
+        chip = new TRigidChipFrame;
+        chip->Options->Values["angle"] = IntToStr(-75+angle);
+        chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+        chip = new TRigidChipFrame;
+        chip->Options->Values["angle"] = "150";
+        chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+
+        chip = new TRigidChipFrame;
+
+        for (int j = 0; j < 5; j ++)
+        {
+          param[j] = param[j] < 24 ? angles[param[j]] : 0;
+          // PANEKITÇ∆RCÇÕãt
+          if (!(invertNS ^ invertWE)) param[j] *= -1;
+        }
+        if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
+        {
+          // ïœêîÇÃí«â¡
+          int min = 99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] < min) min = param[j];
+          int max = -99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5));
+          Core->Variables["JOINT"+IntToStr(i)] = var;
+          chip->Options->Values["angle"] = "JOINT"+IntToStr(i);
+          // ÉLÅ[ÇÃí«â¡
+          for (int j = 1; j < 5; j ++)
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "JOINT"+IntToStr(i), "step="+IntToStr((param[j]-param[0])/5)));
+        }
+        else
+          if (param[0] != 0) chip->Options->Values["angle"] = IntToStr(param[0]);
+        if (hold == 0) chip->Options->Values["spring"] = "0.5";
+
+        chip->Options->Values["option"] = "1";
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+        opt = "";
+        chip = new TRigidChipFrame;
+        chip->Options->Values["angle"] = "-150";
+        chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+
+        chip = new TRigidChipChip;
+        chip->Options->Values["angle"] = "-105";
+        chip->Options->Values["damper"] = "1";
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+
+        chip = NULL;
+        if (dir == rdNorth || dir == rdSouth) invertNS = !invertNS;
+        if (dir == rdEast || dir == rdWest) invertWE = !invertWE;
+      }
+      else if (type == 4 || type == 5)
+      { // Y/ZÉWÉáÉCÉìÉg
+        if (CheckPanekitTruly->Checked)
+        {
+          chip = new TRigidChipFrame;
+          opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(-105+angle);
+          opt += AnsiString(opt != "" ? "," : "") + "damper=1";
+          opt += AnsiString(opt != "" ? "," : "") + "option=1";
+          chip->SetOptions(opt);
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          opt = "";
+          chip = new TRigidChipFrame;
+          chip->SetOptions("angle=-150,damper=1,option=1");
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          chip = new TRigidChipChip;
+          chip->SetOptions("angle=-105,damper=1");
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+        }
+        else if (angle != 0)
+        {
+          chip = new TRigidChipFrame;
+          opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(180+angle);
+          opt += AnsiString(opt != "" ? "," : "") + "damper=1";
+          opt += AnsiString(opt != "" ? "," : "") + "option=1";
+          chip->SetOptions(opt);
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          opt = "";
+          if (dir == rdNorth || dir == rdSouth) invertNS = !invertNS;
+          if (dir == rdEast || dir == rdWest) invertWE = !invertWE;
+        }
+
+        if (type == 4)
+          chip = new TRigidChipRudder;
+        else // if (type == 5)
+          chip = new TRigidChipTrim;
+
+        for (int j = 0; j < 5; j ++)
+        {
+          param[j] = param[j] < 24 ? angles[param[j]] : 0;
+          // PANEKITÇ∆RCìØÇ∂ÅATrimÇÕîΩì]ÇµÇ»Ç¢
+          if (type == 4 && invertNS ^ invertWE) param[j] *= -1;
+        }
+        if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
+        {
+          // ïœêîÇÃí«â¡
+          int min = 99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] < min) min = param[j];
+          int max = -99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5));
+          Core->Variables["JOINT"+IntToStr(i)] = var;
+          opt += AnsiString(opt != "" ? "," : "") + "angle=JOINT"+IntToStr(i);
+          // ÉLÅ[ÇÃí«â¡
+          for (int j = 1; j < 5; j ++)
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "JOINT"+IntToStr(i), "step="+IntToStr((param[j]-param[0])/5)));
+        }
+        else
+          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(param[0]);
+        if (hold == 0) opt += AnsiString(opt != "" ? "," : "") + "spring=0.5";
+
+        if (CheckPanekitTruly->Checked)
+        {
+          chip->SetOptions(opt);
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          opt = "";
+
+          chip = new TRigidChipFrame;
+          chip->SetOptions("angle=-105,damper=1,option=1");
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          opt = "";
+          chip = new TRigidChipFrame;
+          chip->SetOptions("angle=-150,damper=1,option=1");
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          chip = new TRigidChipChip;
+          chip->SetOptions("angle=75,damper=1");
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+
+          chip = NULL;
+          if (dir == rdNorth || dir == rdSouth) invertNS = !invertNS;
+          if (dir == rdEast || dir == rdWest) invertWE = !invertWE;
+        }
+      }
+      else if (type == 6)
+      { // ÉÇÅ[É^Å[
+        chip = new TRigidChipFrame;
+        opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(15+angle);
+        opt += AnsiString(opt != "" ? "," : "") + "damper=1";
+        opt += AnsiString(opt != "" ? "," : "") + "option=1";
+        chip->SetOptions(opt);
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+        opt = "";
+        chip = new TRigidChipFrame;
+        chip->SetOptions("angle=150,damper=1,option=1");
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+
+        chip = new TRigidChipWheel;
+        opt += AnsiString(opt != "" ? "," : "") + "angle=105";
+
+        for (int j = 0; j < 5; j ++)
+        {
+          param[j] -= 0x0C;
+          param[j] *= 5000;
+          // ÉÇÅ[É^Å[ÇÕîΩì]ÇµÇ»Ç¢
+        }
+        if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
+        {
+          // ïœêîÇÃí«â¡
+          int min = 99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] < min) min = param[j];
+          int max = -99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5000));
+          Core->Variables["MOTOR"+IntToStr(i)] = var;
+          opt += AnsiString(opt != "" ? "," : "") + "power=MOTOR"+IntToStr(i);
+          // ÉLÅ[ÇÃí«â¡
+          for (int j = 1; j < 5; j ++)
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "MOTOR"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
+        }
+        else
+          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "power=" + IntToStr(param[0]);
+        if (hold == 0) opt += AnsiString(opt != "" ? "," : "") + "spring=0.5";
+
+        chip->SetOptions(opt);
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+        opt = "";
+
+        chip = new TRigidChipFrame;
+        chip->SetOptions("angle=105,damper=1,option=1");
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+        chip = new TRigidChipFrame;
+        chip->SetOptions("angle=150,damper=1,option=1");
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+        parent = chip;
+        chip = new TRigidChipFrame;
+        opt = "angle=-165,option=0";
+      }
+      else if (type == 7)
+      { // É^ÉCÉÑ
+        chip = new TRigidChipWheel;
+        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+
+        for (int j = 0; j < 5; j ++)
+        {
+          param[j] -= 0x0C;
+          param[j] *= 500;
+          if (invertNS ^ invertWE) param[j] *= -1;
+        }
+        if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
+        {
+          // ïœêîÇÃí«â¡
+          int min = 99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] < min) min = param[j];
+          int max = -99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*500));
+          Core->Variables["TIRE"+IntToStr(i)] = var;
+          opt += AnsiString(opt != "" ? "," : "") + "power=TIRE"+IntToStr(i);
+          // ÉLÅ[ÇÃí«â¡
+          for (int j = 1; j < 5; j ++)
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "TIRE"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
+        }
+        else
+          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "power=" + IntToStr(param[0]);
+      }
+      else if (type == 8)
+      { // ÉWÉFÉbÉg
+        chip = new TRigidChipJet;
+        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+
+        for (int j = 0; j < 5; j ++)
+        {
+          param[j] -= 0x0C;
+          param[j] *= 10000;
+          if (invertNS ^ invertWE) param[j] *= -1;
+        }
+        if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
+        {
+          // ïœêîÇÃí«â¡
+          int min = 99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] < min) min = param[j];
+          int max = -99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5000));
+          Core->Variables["JET"+IntToStr(i)] = var;
+          opt += AnsiString(opt != "" ? "," : "") + "power=JET"+IntToStr(i);
+          // ÉLÅ[ÇÃí«â¡
+          for (int j = 1; j < 5; j ++)
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "JET"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
+        }
+        else
+          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "power=" + IntToStr(param[0]);
+      }
+      else if (type == 9)
+      { // ÉVÉÖÅ[É^Å[
+        chip = new TRigidChipArm;
+        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+
+        for (int j = 0; j < 5; j ++)
+        {
+          param[j] -= 0x0C;
+          param[j] *= 25000;
+        }
+        if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
+        {
+          // ïœêîÇÃí«â¡
+          int min = 99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] < min) min = param[j];
+          int max = -99999;
+          for (int j = 0; j < 5; j ++)
+            if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(max));
+          Core->Variables["SHOT"+IntToStr(i)] = var;
+          opt += AnsiString(opt != "" ? "," : "") + "option="+IntToStr(max);
+          opt += AnsiString(opt != "" ? "," : "") + "power=SHOT"+IntToStr(i);
+          // ÉLÅ[ÇÃí«â¡
+          for (int j = 1; j < 5; j ++)
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "SHOT"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
+        }
+        else
+          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "option=" + IntToStr(param[0]) + ",power=" + IntToStr(param[0]);
+      }
+      else
+      {
+        err = "ñ¢ímÇÃÉpÅ[ÉcÉ^ÉCÉvî‘çÜ(" + IntToStr(type) + ")";
+        break;
+      }
+      if (chip)
+      {
+        chip->SetOptions(opt);
+        chip->Direction = dirmap[invertNS][invertWE][dir];
+        parent->AddSubChip(chip);
+      }
+      
+      if (con == 0)
+      { // ê⁄ë±Ç»Çµ(çsÇ´é~Ç‹ÇË)
+        if (stackChip.size() == 0)
+          break;
+
+        chip = stackChip.top(); stackChip.pop();
+        con = stackCon.top(); stackCon.pop();
+        invertNS = stackInvertNS.top(); stackInvertNS.pop();
+        invertWE = stackInvertWE.top(); stackInvertWE.pop();
+        dir = dirmap[invertNS][invertWE][chip->Direction];
+      }
+      if (con & 1)
+      { // íºêiï˚å¸Ç…ê⁄ë±Ç†ÇË
+        con &= ~1;
+      }
+      else if (con & 2)
+      { // âEÇ…ê⁄ë±Ç†ÇË
+        con &= ~2;
+        dir = (TRigidChipsDirection)((dir % 4) + 1);
+      }
+      else if (con & 8)
+      { // ç∂Ç…ê⁄ë±Ç†ÇË
+        con &= ~8;
+        dir = (TRigidChipsDirection)(((dir - 2 + 4) % 4) + 1);
+      }
+      if (chip)
+        parent = chip;
+      if (con)
+      { // ëºÇ…Ç‡ê⁄ë±Ç†ÇË
+        stackChip.push(parent);
+        stackCon.push(con);
+        stackInvertNS.push(invertNS);
+        stackInvertWE.push(invertWE);
+      }
+    }
+  }
+
+  // édólÉRÉÅÉìÉg
+  if (err == "")
+    for (int i = 0; i < 8; i ++)
+      MemoPanekit->Lines->Add(ReadPanekitString(fp, 15));
+  else
+  {
+    MemoPanekit->Lines->Add(err);
+    MemoPanekit->Lines->Add("ÉtÉ@ÉCÉãà íu: 0x" + IntToHex(FileSeek(fp, 0, 1), 4));
+  }
+
+  FileClose(fp);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::CheckPanekitTrulyClick(TObject *Sender)
+{
+  ListPanekitClick(Sender);
 }
 //---------------------------------------------------------------------------
 

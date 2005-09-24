@@ -207,9 +207,9 @@ AnsiString TRCScript::Expression(bool run)
   while (1)
   {
     sym = Symbol();
-    if (sym == "&")
+    if (sym == "&" || sym == "and")
       val = (int)StrToFloatDef(Term(run), 0) & (int)StrToFloatDef(val, 0) ? "1" : "0";
-    else if (sym == "|")
+    else if (sym == "|" || sym == "or")
       val = (int)StrToFloatDef(Term(run), 0) | (int)StrToFloatDef(val, 0) ? "1" : "0";
     else
       break;
@@ -715,11 +715,11 @@ AnsiString TRCScript::Factor(bool run)
     { // •Ï”
       if (!run)
         return "";
-      TRigidChipsVariableMap::iterator i = Core->Variables.find(sym.UpperCase());
+      TRigidChipsVariableMap::iterator i = Core->Variables.find(symup);
       if (i != Core->Variables.end())
         return FloatToStr(i->second->Value);
       else
-        return Variables[sym];
+        return Variables[symup];
     }
   }
 
@@ -753,7 +753,7 @@ bool TRCScript::Statement(bool run)
     sym = Symbol();
     if (run)
     {
-      std::map<AnsiString, int>::iterator i = Labels.find(sym);
+      std::map<AnsiString, int>::iterator i = Labels.find(sym.UpperCase());
       if (i != Labels.end())
       {
         PC = i->second;
@@ -768,7 +768,7 @@ bool TRCScript::Statement(bool run)
   {
     sym = Symbol();
     if (!run)
-      Labels[sym] = PC;
+      Labels[sym.UpperCase()] = PC;
     return true;
   }
   else if (symup == "PRINT" || symup == "OUT")
@@ -797,11 +797,11 @@ bool TRCScript::Statement(bool run)
       AnsiString val = Expression(run);
       if (run)
       {
-        TRigidChipsVariableMap::iterator i = Core->Variables.find(sym.UpperCase());
+        TRigidChipsVariableMap::iterator i = Core->Variables.find(symup);
         if (i != Core->Variables.end())
           i->second->Value = StrToFloatDef(val, 0);
         else
-          Variables[sym] = val;
+          Variables[symup] = val;
       }
     }
     else

@@ -15,7 +15,7 @@ void glMaterialColor3f(float r, float g, float b)
   glColor3f(r, g, b);
   const float diffuse[4] = {0.8*r, 0.8*g, 0.8*b, 1};
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-  const float ambient[4] = {0.2*r+0.1, 0.2*g+0.1, 0.2*b+0.1, 1};
+  const float ambient[4] = {0.1*r+0.1, 0.1*g+0.1, 0.1*b+0.1, 1};
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
 }
 void glMaterialColor4f(float r, float g, float b, float a)
@@ -23,7 +23,7 @@ void glMaterialColor4f(float r, float g, float b, float a)
   glColor3f(r, g, b);
   const float diffuse[4] = {0.8*r, 0.8*g, 0.8*b, a};
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-  const float ambient[4] = {0.2*r+0.1, 0.2*g+0.1, 0.2*b+0.1, a};
+  const float ambient[4] = {0.1*r+0.1, 0.1*g+0.1, 0.1*b+0.1, a};
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
 }
 //---------------------------------------------------------------------------

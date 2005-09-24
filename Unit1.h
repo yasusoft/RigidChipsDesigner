@@ -165,6 +165,19 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *N1;
         TMenuItem *KeyUndo;
         TMenuItem *KeyEditBar1;
+        TTabSheet *TabPanekit;
+        TListBox *ListPanekit;
+        TPanel *PanelPanekit;
+        TEdit *EditPanekitFile;
+        TButton *ButtonPanekitBrowse;
+        TLabel *LabelPanekitFile;
+        TMemo *MemoPanekit;
+        TOpenDialog *OpenDialogPanekit;
+        TMenuItem *KeyFileBar2;
+        TMenuItem *KeyImport;
+        TCheckBox *CheckPanekitTruly;
+        TMenuItem *KeySelectAdd;
+        TMenuItem *KeySaveObfuscate;
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall PaintPanelPaint(TObject *Sender);
         void __fastcall PaintPanelMouseDown(TObject *Sender, TMouseButton Button,
@@ -231,6 +244,12 @@ __published:	// IDE 管理のコンポーネント
           TPoint &MousePos, bool &Handled);
         void __fastcall KeyDelOptionClick(TObject *Sender);
         void __fastcall KeyUndoClick(TObject *Sender);
+        void __fastcall ButtonPanekitBrowseClick(TObject *Sender);
+        void __fastcall KeyImportClick(TObject *Sender);
+        void __fastcall ListPanekitClick(TObject *Sender);
+        void __fastcall KeySelectAddClick(TObject *Sender);
+        void __fastcall CheckPanekitTrulyClick(TObject *Sender);
+        void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 private:	// ユーザー宣言
         HGLRC ghRC; // レンダリングコンテキスト
         HDC   ghDC; // デバイスコンテキスト
