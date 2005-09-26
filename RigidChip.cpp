@@ -117,8 +117,13 @@ TRigidChip::TRigidChip()
 //---------------------------------------------------------------------------
 TRigidChip::~TRigidChip()
 {
-  if (Core && Core->Deleted && (Core->Deleted == this || Core->Deleted->Parent == this))
-    Core->Deleted = NULL;
+  if (Core)
+  {
+    if (Core->Select == this)
+      Core->Select = NULL;
+    if (Core->Deleted && (Core->Deleted == this || Core->Deleted->Parent == this))
+      Core->Deleted = NULL;
+  }
   if (Parent)
     Parent->DelSubChip(this);
   for (int i = ChipList->Count-1; i >= 0; i --)
@@ -131,8 +136,15 @@ void TRigidChip::SetOptions(AnsiString opt)
 {
   opt = StringReplace(opt, " ", "", TReplaceFlags() << rfReplaceAll);
   Options->CommaText = opt;
-  for (int i = 0; i < Options->Count; i ++)
-    Options->Strings[i] = Options->Names[i].LowerCase() + "=" + Options->Values[Options->Names[i]];
+  for (int i = Options->Count-1; i >= 0; i --)
+  {
+    AnsiString n = Options->Names[i];
+    AnsiString v = Options->Values[n];
+    if (v != "")
+      Options->Strings[i] = n.LowerCase() + "=" + v;
+    else
+      Options->Delete(i);
+  }
 }
 //---------------------------------------------------------------------------
 void TRigidChip::SetCore(TRigidChipCore *c)
@@ -259,7 +271,6 @@ void TRigidChip::Draw(TRigidChip *caller)
   else
     glMaterialColor3f(1, 1, 1);
 
-  glLoadName((GLuint)this);
   glPushMatrix();
   switch (Direction)
   {
@@ -276,7 +287,9 @@ void TRigidChip::Draw(TRigidChip *caller)
     glBindTexture(GL_TEXTURE_2D, tex);
   }
 
+  glLoadName((GLuint)this);
   DrawMain();
+  glLoadName(0);
 
   glDisable(GL_TEXTURE_2D);
   glPopMatrix();
@@ -421,6 +434,7 @@ TRigidChipCore::TRigidChipCore()
   Select = NULL;
   Deleted = NULL;
 
+  Comment = "[RCD]";
   Script = new TRCScript(this);
 }
 //---------------------------------------------------------------------------
@@ -571,6 +585,28 @@ void TRigidChipFrame::DrawMain()
         glTexCoord2f(1   , 1-w2); glVertex3f(1  ,  1-w, 0);
         glTexCoord2f(1   ,   w2); glVertex3f(1  , -1+w, 0);
   glEnd();
+}
+//---------------------------------------------------------------------------
+void TRigidChipFrame::DrawTranslucentMain()
+{
+  int opt = Options->Values["option"].ToIntDef(0);
+  if (opt == 1 && !Core->ShowGhost)
+    return;
+
+  // クリック選択用の透明チップ描画
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ZERO, GL_ONE);
+  glLoadName((GLuint)this);
+  //TRigidChip::DrawMain();
+  glBegin(GL_QUADS);
+        glNormal3f(0, 0, 1);
+        glVertex3f(-0.5, -0.5, 0);
+        glVertex3f(-0.5,  0.5, 0);
+        glVertex3f( 0.5,  0.5, 0);
+        glVertex3f( 0.5, -0.5, 0);
+  glEnd();
+  glLoadName(0);
+  glDisable(GL_BLEND);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -827,6 +863,28 @@ void TRigidChipRudderF::DrawMain()
   glEnd();
 }
 //---------------------------------------------------------------------------
+void TRigidChipRudderF::DrawTranslucentMain()
+{
+  int opt = Options->Values["option"].ToIntDef(0);
+  if (opt == 1 && !Core->ShowGhost)
+    return;
+
+  // クリック選択用の透明チップ描画
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ZERO, GL_ONE);
+  glLoadName((GLuint)this);
+  //TRigidChip::DrawMain();
+  glBegin(GL_QUADS);
+        glNormal3f(0, 0, 1);
+        glVertex3f(-0.5, -0.5, 0);
+        glVertex3f(-0.5,  0.5, 0);
+        glVertex3f( 0.5,  0.5, 0);
+        glVertex3f( 0.5, -0.5, 0);
+  glEnd();
+  glLoadName(0);
+  glDisable(GL_BLEND);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 GLuint TRigidChipTrim::Texture;
 //---------------------------------------------------------------------------
@@ -894,6 +952,28 @@ void TRigidChipTrimF::DrawMain()
         glTexCoord2f(0.6, 0+w2); glVertex3f( 0.3, -1+w, 0);
         glTexCoord2f(0.5, 0.35); glVertex3f( 0,   -0.3, 0);
   glEnd();
+}
+//---------------------------------------------------------------------------
+void TRigidChipTrimF::DrawTranslucentMain()
+{
+  int opt = Options->Values["option"].ToIntDef(0);
+  if (opt == 1 && !Core->ShowGhost)
+    return;
+
+  // クリック選択用の透明チップ描画
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ZERO, GL_ONE);
+  glLoadName((GLuint)this);
+  //TRigidChip::DrawMain();
+  glBegin(GL_QUADS);
+        glNormal3f(0, 0, 1);
+        glVertex3f(-0.5, -0.5, 0);
+        glVertex3f(-0.5,  0.5, 0);
+        glVertex3f( 0.5,  0.5, 0);
+        glVertex3f( 0.5, -0.5, 0);
+  glEnd();
+  glLoadName(0);
+  glDisable(GL_BLEND);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

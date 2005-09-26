@@ -110,6 +110,7 @@ public:
         void AddKey(AnsiString keyn, TRigidChipsKey *key);
         void ActKey(AnsiString keyn);
 
+        AnsiString Comment;
         AnsiString Lua;
         TRCScript *Script;
 
@@ -139,6 +140,7 @@ class TRigidChipFrame : public TRigidChipChip
 {
 protected:
         virtual void DrawMain();
+        virtual void DrawTranslucentMain();
 public:
         virtual TRigidChipsType GetType(){ return ctFrame; }
         virtual AnsiString GetTypeString(){ return "Frame"; }
@@ -211,6 +213,7 @@ class TRigidChipRudderF : public TRigidChipRudder
 {
 protected:
         virtual void DrawMain();
+        virtual void DrawTranslucentMain();
 public:
         virtual TRigidChipsType GetType(){ return ctRudderF; }
         virtual AnsiString GetTypeString(){ return "RudderF"; }
@@ -232,6 +235,7 @@ class TRigidChipTrimF : public TRigidChipTrim
 {
 protected:
         virtual void DrawMain();
+        virtual void DrawTranslucentMain();
 public:
         virtual TRigidChipsType GetType(){ return ctTrimF; }
         virtual AnsiString GetTypeString(){ return "TrimF"; }

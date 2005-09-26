@@ -43,8 +43,9 @@ object Form1: TForm1
     Top = 5
     Width = 175
     Height = 435
-    ActivePage = TabPanekit
+    ActivePage = TabBody
     Anchors = [akTop, akRight, akBottom]
+    TabIndex = 2
     TabOrder = 4
     OnChange = PageControl1Change
     object TabVal: TTabSheet
@@ -346,7 +347,7 @@ object Form1: TForm1
         408)
       object LabelDirection: TLabel
         Left = 0
-        Top = 130
+        Top = 150
         Width = 46
         Height = 12
         Caption = '&Direction'
@@ -360,7 +361,7 @@ object Form1: TForm1
       end
       object LabelType: TLabel
         Left = 85
-        Top = 130
+        Top = 150
         Width = 48
         Height = 12
         Caption = 'Chip&Type'
@@ -370,53 +371,7 @@ object Form1: TForm1
         Left = 40
         Top = 0
         Width = 90
-        Height = 40
-        Font.Charset = SHIFTJIS_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -12
-        Font.Name = #65325#65331' '#12468#12471#12483#12463
-        Font.Style = []
-        ImeMode = imDisable
-        ItemHeight = 12
-        ParentFont = False
-        PopupMenu = PopupMenuAdd
-        TabOrder = 1
-        OnClick = ListNorthClick
-        OnContextPopup = ListNorthContextPopup
-      end
-      object ButtonParent: TButton
-        Left = 140
-        Top = 5
-        Width = 20
-        Height = 20
-        Anchors = [akTop, akRight]
-        Caption = #8593
-        TabOrder = 0
-        OnClick = ButtonParentClick
-      end
-      object ListEast: TListBox
-        Left = 85
-        Top = 40
-        Width = 80
-        Height = 40
-        Font.Charset = SHIFTJIS_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -12
-        Font.Name = #65325#65331' '#12468#12471#12483#12463
-        Font.Style = []
-        ImeMode = imDisable
-        ItemHeight = 12
-        ParentFont = False
-        PopupMenu = PopupMenuAdd
-        TabOrder = 2
-        OnClick = ListNorthClick
-        OnContextPopup = ListNorthContextPopup
-      end
-      object ListWest: TListBox
-        Left = 0
-        Top = 40
-        Width = 80
-        Height = 40
+        Height = 45
         Font.Charset = SHIFTJIS_CHARSET
         Font.Color = clWindowText
         Font.Height = -12
@@ -430,11 +385,21 @@ object Form1: TForm1
         OnClick = ListNorthClick
         OnContextPopup = ListNorthContextPopup
       end
-      object ListSouth: TListBox
-        Left = 40
-        Top = 80
-        Width = 90
-        Height = 40
+      object ButtonParent: TButton
+        Left = 140
+        Top = 10
+        Width = 20
+        Height = 20
+        Anchors = [akTop, akRight]
+        Caption = #8593
+        TabOrder = 2
+        OnClick = ButtonParentClick
+      end
+      object ListEast: TListBox
+        Left = 85
+        Top = 50
+        Width = 80
+        Height = 45
         Font.Charset = SHIFTJIS_CHARSET
         Font.Color = clWindowText
         Font.Height = -12
@@ -448,9 +413,45 @@ object Form1: TForm1
         OnClick = ListNorthClick
         OnContextPopup = ListNorthContextPopup
       end
+      object ListWest: TListBox
+        Left = 0
+        Top = 50
+        Width = 80
+        Height = 45
+        Font.Charset = SHIFTJIS_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = #65325#65331' '#12468#12471#12483#12463
+        Font.Style = []
+        ImeMode = imDisable
+        ItemHeight = 12
+        ParentFont = False
+        PopupMenu = PopupMenuAdd
+        TabOrder = 5
+        OnClick = ListNorthClick
+        OnContextPopup = ListNorthContextPopup
+      end
+      object ListSouth: TListBox
+        Left = 40
+        Top = 100
+        Width = 90
+        Height = 45
+        Font.Charset = SHIFTJIS_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = #65325#65331' '#12468#12471#12483#12463
+        Font.Style = []
+        ImeMode = imDisable
+        ItemHeight = 12
+        ParentFont = False
+        PopupMenu = PopupMenuAdd
+        TabOrder = 6
+        OnClick = ListNorthClick
+        OnContextPopup = ListNorthContextPopup
+      end
       object ComboType: TComboBox
         Left = 85
-        Top = 145
+        Top = 165
         Width = 80
         Height = 20
         Style = csDropDownList
@@ -462,7 +463,7 @@ object Form1: TForm1
         ImeMode = imDisable
         ItemHeight = 12
         ParentFont = False
-        TabOrder = 7
+        TabOrder = 9
         OnChange = ComboTypeChange
         Items.Strings = (
           'Chip'
@@ -480,7 +481,7 @@ object Form1: TForm1
       end
       object ComboDirection: TComboBox
         Left = 0
-        Top = 145
+        Top = 165
         Width = 80
         Height = 20
         Style = csDropDownList
@@ -492,7 +493,7 @@ object Form1: TForm1
         ImeMode = imDisable
         ItemHeight = 12
         ParentFont = False
-        TabOrder = 5
+        TabOrder = 7
         OnChange = ComboDirectionChange
         Items.Strings = (
           'North'
@@ -502,9 +503,9 @@ object Form1: TForm1
       end
       object OptionsEditor: TValueListEditor
         Left = 0
-        Top = 173
+        Top = 188
         Width = 167
-        Height = 235
+        Height = 220
         Align = alBottom
         Anchors = [akLeft, akTop, akRight, akBottom]
         DefaultColWidth = 55
@@ -519,8 +520,8 @@ object Form1: TForm1
         PopupMenu = PopupMenuOptions
         ScrollBars = ssVertical
         Strings.Strings = (
-          '=')
-        TabOrder = 8
+          '')
+        TabOrder = 10
         TitleCaptions.Strings = (
           'Key'
           'Value')
@@ -533,13 +534,31 @@ object Form1: TForm1
       end
       object CheckRotate: TCheckBox
         Left = 50
-        Top = 130
+        Top = 150
         Width = 30
         Height = 12
         Caption = 'R'
         Checked = True
         State = cbChecked
-        TabOrder = 6
+        TabOrder = 8
+      end
+      object ButtonPlus: TButton
+        Left = 5
+        Top = 0
+        Width = 25
+        Height = 20
+        Caption = #65291
+        TabOrder = 0
+        OnClick = ButtonPlusClick
+      end
+      object ButtonMinus: TButton
+        Left = 5
+        Top = 25
+        Width = 25
+        Height = 20
+        Caption = #65293
+        TabOrder = 1
+        OnClick = ButtonMinusClick
       end
     end
     object TabScript: TTabSheet
@@ -674,6 +693,16 @@ object Form1: TForm1
           Caption = 'Convert Truly'
           Checked = True
           State = cbChecked
+          TabOrder = 3
+          OnClick = CheckPanekitTrulyClick
+        end
+        object CheckPanekitDamper: TCheckBox
+          Left = 5
+          Top = 30
+          Width = 60
+          Height = 15
+          AllowGrayed = True
+          Caption = 'damper'
           TabOrder = 2
           OnClick = CheckPanekitTrulyClick
         end
@@ -837,7 +866,6 @@ object Form1: TForm1
       OnClick = KeyEditClick
       object KeyUndo: TMenuItem
         Caption = '&UnDelete'
-        ShortCut = 16474
         OnClick = KeyUndoClick
       end
       object KeyEditBar1: TMenuItem
@@ -845,23 +873,23 @@ object Form1: TForm1
       end
       object KeyCut: TMenuItem
         Caption = 'Cu&t'
-        ShortCut = 16472
         OnClick = KeyCutClick
       end
       object KeyCopy: TMenuItem
         Caption = '&Copy'
-        ShortCut = 16451
         OnClick = KeyCopyClick
       end
       object KeyPaste: TMenuItem
         Caption = 'Paste'
-        ShortCut = 16470
         OnClick = KeyPasteClick
       end
       object KeyDelete: TMenuItem
         Caption = '&Delete'
-        ShortCut = 46
         OnClick = KeyDeleteClick
+      end
+      object KeyDeleteOne: TMenuItem
+        Caption = 'Delete only &one'
+        OnClick = ButtonMinusClick
       end
     end
     object KeyTool: TMenuItem
@@ -883,9 +911,14 @@ object Form1: TForm1
     object KeyOption: TMenuItem
       Caption = '&Option'
       object KeySelectAdd: TMenuItem
-        Caption = 'Select AddChip'
+        Caption = 'Select &AddChip'
         Checked = True
         OnClick = KeySelectAddClick
+      end
+      object KeyShowVoidOptions: TMenuItem
+        Caption = 'Show &void options'
+        Checked = True
+        OnClick = KeyShowVoidOptionsClick
       end
       object KeyOptSave: TMenuItem
         Caption = '&Save'
@@ -919,6 +952,17 @@ object Form1: TForm1
           OnClick = KeySaveOptionClick
         end
       end
+      object KeyDefaultView: TMenuItem
+        Caption = 'Default &View'
+        object KeyDefViewThis: TMenuItem
+          Caption = 'Use &this view'
+          OnClick = KeyDefViewThisClick
+        end
+        object KeyDefViewInitilize: TMenuItem
+          Caption = '&Initilize'
+          OnClick = KeyDefViewInitilizeClick
+        end
+      end
     end
     object Help1: TMenuItem
       Caption = '&Help'
@@ -942,23 +986,23 @@ object Form1: TForm1
     end
     object KeyCut2: TMenuItem
       Caption = 'Cu&t'
-      ShortCut = 16472
       OnClick = KeyCutClick
     end
     object KeyCopy2: TMenuItem
       Caption = '&Copy'
-      ShortCut = 16451
       OnClick = KeyCopyClick
     end
     object KeyPaste2: TMenuItem
       Caption = '&Paste'
-      ShortCut = 16470
       OnClick = KeyPasteClick
     end
     object KeyDelete2: TMenuItem
       Caption = '&Delete'
-      ShortCut = 46
       OnClick = KeyDeleteClick
+    end
+    object KeyDeleteOne2: TMenuItem
+      Caption = 'Delete only &one'
+      OnClick = ButtonMinusClick
     end
     object KeyBar2: TMenuItem
       Caption = '-'
@@ -969,35 +1013,11 @@ object Form1: TForm1
     end
   end
   object PopupMenuOptions: TPopupMenu
-    AutoHotkeys = maManual
     OnPopup = PopupMenuOptionsPopup
     Left = 115
     Top = 15
-    object KeyDelOption: TMenuItem
-      Caption = '&Delete option'
-      OnClick = KeyDelOptionClick
-    end
-    object N1: TMenuItem
-      Caption = '-'
-    end
-    object KeyOptionsColor: TMenuItem
-      Caption = 'color'
-      OnClick = KeyOptionsClick
-    end
     object KeyOptionsAngle: TMenuItem
       Caption = 'angle'
-      OnClick = KeyOptionsClick
-    end
-    object KeyOptionsSpring: TMenuItem
-      Caption = 'spring'
-      OnClick = KeyOptionsClick
-    end
-    object KeyOptionsDamper: TMenuItem
-      Caption = 'damper'
-      OnClick = KeyOptionsClick
-    end
-    object KeyOptionsName: TMenuItem
-      Caption = 'name'
       OnClick = KeyOptionsClick
     end
     object KeyOptionsPower: TMenuItem
@@ -1012,8 +1032,24 @@ object Form1: TForm1
       Caption = 'option'
       OnClick = KeyOptionsClick
     end
+    object KeyOptionsColor: TMenuItem
+      Caption = 'color'
+      OnClick = KeyOptionsClick
+    end
     object KeyOptionsEffect: TMenuItem
       Caption = 'effect'
+      OnClick = KeyOptionsClick
+    end
+    object KeyOptionsSpring: TMenuItem
+      Caption = 'spring'
+      OnClick = KeyOptionsClick
+    end
+    object KeyOptionsDamper: TMenuItem
+      Caption = 'damper'
+      OnClick = KeyOptionsClick
+    end
+    object KeyOptionsName: TMenuItem
+      Caption = 'name'
       OnClick = KeyOptionsClick
     end
     object KeyOptionsUser1: TMenuItem
@@ -1024,9 +1060,27 @@ object Form1: TForm1
       Caption = 'user2'
       OnClick = KeyOptionsClick
     end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object KeyOptionUp: TMenuItem
+      Caption = '&Up'
+      OnClick = KeyOptionUpClick
+    end
+    object KeyOptionDown: TMenuItem
+      Caption = '&Down'
+      OnClick = KeyOptionDownClick
+    end
+    object KeyOptionDelete: TMenuItem
+      Caption = 'D&elete'
+      OnClick = KeyOptionDeleteClick
+    end
+    object KeyOptionsSort: TMenuItem
+      Caption = '&Sort'
+      OnClick = KeyOptionsSortClick
+    end
   end
   object PopupMenuAdd: TPopupMenu
-    AutoHotkeys = maManual
     OnPopup = PopupMenuAddPopup
     Left = 80
     Top = 15
@@ -1077,6 +1131,13 @@ object Form1: TForm1
     object KeyAddCowl: TMenuItem
       Caption = 'Cowl'
       OnClick = KeyAddChipClick
+    end
+    object KeyAddBar1: TMenuItem
+      Caption = '-'
+    end
+    object KeyPasteDirection: TMenuItem
+      Caption = '&Paste'
+      OnClick = KeyPasteClick
     end
   end
   object OpenDialogPanekit: TOpenDialog

@@ -10,7 +10,7 @@ class TRCDLoader
 private:
         void skipsp(int fp);
         AnsiString readto(int fp, char to);
-        bool skipcomment(int fp);
+        AnsiString readcomment(int fp);
         AnsiString readkey(int fp);
         TRigidChip* procval(int fp, TRigidChipCore *core);
         TRigidChip* prockey(int fp, TRigidChipCore *core);
@@ -24,7 +24,7 @@ public:
         AnsiString ErrorMessage;
         TRigidChipCore* Load(AnsiString filename);
 
-        TRigidChip* StringToChip(AnsiString str);
+        TRigidChip* StringToChip(AnsiString str, TRigidChip *addto = NULL);
 };
 //---------------------------------------------------------------------------
 #endif

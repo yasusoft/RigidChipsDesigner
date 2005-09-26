@@ -161,7 +161,7 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyAddArm;
         TMenuItem *KeyAddCowl;
         TCheckBox *CheckRotate;
-        TMenuItem *KeyDelOption;
+        TMenuItem *KeyOptionDelete;
         TMenuItem *N1;
         TMenuItem *KeyUndo;
         TMenuItem *KeyEditBar1;
@@ -178,6 +178,20 @@ __published:	// IDE 管理のコンポーネント
         TCheckBox *CheckPanekitTruly;
         TMenuItem *KeySelectAdd;
         TMenuItem *KeySaveObfuscate;
+        TCheckBox *CheckPanekitDamper;
+        TMenuItem *KeyShowVoidOptions;
+        TMenuItem *KeyOptionUp;
+        TMenuItem *KeyOptionDown;
+        TMenuItem *KeyOptionsSort;
+        TMenuItem *KeyPasteDirection;
+        TMenuItem *KeyAddBar1;
+        TMenuItem *KeyDefViewThis;
+        TMenuItem *KeyDefViewInitilize;
+        TMenuItem *KeyDefaultView;
+        TButton *ButtonPlus;
+        TButton *ButtonMinus;
+        TMenuItem *KeyDeleteOne2;
+        TMenuItem *KeyDeleteOne;
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall PaintPanelPaint(TObject *Sender);
         void __fastcall PaintPanelMouseDown(TObject *Sender, TMouseButton Button,
@@ -242,7 +256,7 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall PopupMenuAddPopup(TObject *Sender);
         void __fastcall ListNorthContextPopup(TObject *Sender,
           TPoint &MousePos, bool &Handled);
-        void __fastcall KeyDelOptionClick(TObject *Sender);
+        void __fastcall KeyOptionDeleteClick(TObject *Sender);
         void __fastcall KeyUndoClick(TObject *Sender);
         void __fastcall ButtonPanekitBrowseClick(TObject *Sender);
         void __fastcall KeyImportClick(TObject *Sender);
@@ -250,6 +264,14 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall KeySelectAddClick(TObject *Sender);
         void __fastcall CheckPanekitTrulyClick(TObject *Sender);
         void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
+        void __fastcall KeyShowVoidOptionsClick(TObject *Sender);
+        void __fastcall KeyOptionUpClick(TObject *Sender);
+        void __fastcall KeyOptionDownClick(TObject *Sender);
+        void __fastcall KeyOptionsSortClick(TObject *Sender);
+        void __fastcall KeyDefViewThisClick(TObject *Sender);
+        void __fastcall KeyDefViewInitilizeClick(TObject *Sender);
+        void __fastcall ButtonPlusClick(TObject *Sender);
+        void __fastcall ButtonMinusClick(TObject *Sender);
 private:	// ユーザー宣言
         HGLRC ghRC; // レンダリングコンテキスト
         HDC   ghDC; // デバイスコンテキスト
@@ -263,6 +285,7 @@ private:	// ユーザー宣言
         int PickUpX, PickUpY;
         double camera_x, camera_y, camera_z; // カメラ座標
         double camera_matrix[16]; // カメラ行列
+        double def_cx, def_cy, def_cz, def_cmat[16];
 
         bool mouse_left, mouse_right; // マウス投下中？
         int mouse_x, mouse_y; // 投下開始マウス位置

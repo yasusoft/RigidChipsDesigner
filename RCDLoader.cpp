@@ -29,37 +29,46 @@ AnsiString TRCDLoader::readto(int fp, char to)
     s += AnsiString(c);
   return s;
 }
-bool TRCDLoader::skipcomment(int fp)
-{ // コメントだったら改行まで飛ばす
+AnsiString TRCDLoader::readcomment(int fp)
+{ // コメントだったら改行まで読み込む
   char c;
   if (FileRead(fp, &c, 1) == 1)
   {
     if (c != '/')
     {
       FileSeek(fp, -1, 1);
-      return false;
+      return "";
     }
   }
   else
-    return false;
+    return "";
 
   if (FileRead(fp, &c, 1) == 1)
   {
     if (c != '/')
     {
       FileSeek(fp, -2, 1);
-      return false;
+      return "";
     }
   }
   else
-    return false;
+    return "";
 
-  readto(fp, '\n');
-  return true;
+  if (FileRead(fp, &c, 1) == 1 && c != ' ')
+    FileSeek(fp, -1, 1);
+
+  AnsiString s;
+  while (FileRead(fp, &c, 1) == 1)
+  {
+    s += AnsiString(c);
+    if (c == '\n')
+      break;
+  }
+  return s;
 }
 AnsiString TRCDLoader::readkey(int fp)
 { // 英数字を読み込む
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   AnsiString key;
   char c;
@@ -74,7 +83,7 @@ AnsiString TRCDLoader::readkey(int fp)
     }
   }
 
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   return key;
 }
@@ -89,6 +98,11 @@ TRigidChipCore* TRCDLoader::Load(AnsiString filename)
   }
 
   TRigidChipCore *core = new TRigidChipCore;
+
+  AnsiString cmt;
+  core->Comment = "";
+  while (skipsp(fp), (cmt = readcomment(fp)) != "")
+    core->Comment += cmt;
 
   AnsiString key;
   while ((key = readkey(fp).LowerCase()) != "")
@@ -237,7 +251,7 @@ TRigidChip* TRCDLoader::procval(int fp, TRigidChipCore* core)
     ErrorMessage = "open bracket must be after val";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   AnsiString key;
   while ((key = readkey(fp)) != "")
@@ -248,7 +262,7 @@ TRigidChip* TRCDLoader::procval(int fp, TRigidChipCore* core)
       ErrorMessage = "open square bracket must be after variable name";
       return NULL;
     }
-    while (skipsp(fp), skipcomment(fp));
+    while (skipsp(fp), readcomment(fp) != "");
 
     TRigidChipsVariable *var = new TRigidChipsVariable(core, readto(fp, ')'));
     core->Variables[key.UpperCase()] = var;
@@ -260,7 +274,7 @@ TRigidChip* TRCDLoader::procval(int fp, TRigidChipCore* core)
     ErrorMessage = "close bracket of val was not found";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   return core;
 }
@@ -274,7 +288,7 @@ TRigidChip* TRCDLoader::prockey(int fp, TRigidChipCore* core)
     ErrorMessage = "open bracket must be after key";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   AnsiString keyn, var;
   while ((keyn = readkey(fp)) != "")
@@ -297,7 +311,7 @@ TRigidChip* TRCDLoader::prockey(int fp, TRigidChipCore* core)
       TRigidChipsKey *key = new TRigidChipsKey(core, var, readto(fp, ')'));
       core->AddKey(keyn, key);
 
-      while (skipsp(fp), skipcomment(fp));
+      while (skipsp(fp), readcomment(fp) != "");
       FileRead(fp, &c, 1);
       if (c != ',')
       {
@@ -313,7 +327,7 @@ TRigidChip* TRCDLoader::prockey(int fp, TRigidChipCore* core)
     ErrorMessage = "close bracket of val was not found";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   return core;
 }
@@ -327,7 +341,7 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
     ErrorMessage = "open bracket must be after body";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   AnsiString key = readkey(fp).LowerCase();
   if (key != "core")
@@ -344,7 +358,7 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
   }
 
   core->SetOptions(readto(fp, ')'));
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   FileRead(fp, &c, 1);
   if (c != '{')
@@ -352,7 +366,7 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
     ErrorMessage = "open bracket must be after core()";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
+  while (skipsp(fp), readcomment(fp) != "");
 
   TStack *stack = new TStack;
   TRigidChip *parent = core;
@@ -362,40 +376,50 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
     {
       if (c == '}')
       {
-        while (skipsp(fp), skipcomment(fp));
+        while (skipsp(fp), readcomment(fp) != "");
         if (stack->Count() == 0)
           break;
         parent = (TRigidChip*)stack->Pop();
         continue;
       }
-
-      TRigidChipsDirection direct;
-      if ('a' <= c && c <= 'z') c += 'A' - 'a';
-      if (c == 'N') direct = rdNorth;
-      else if (c == 'E') direct = rdEast;
-      else if (c == 'W') direct = rdWest;
-      else if (c == 'S') direct = rdSouth;
-      else
-      {
-        ErrorMessage = "Unknown direction (" + AnsiString(c) + ")";
-        return NULL;
-      }
-
-      if (FileRead(fp, &c, 1) != 1 || c != ':')
-      {
-        ErrorMessage = ": must be after direction";
-        return NULL;
-      }
+      FileSeek(fp, -1, 1);
 
       key = readkey(fp).LowerCase();
       if (key == "")
       {
-        ErrorMessage = "chip type must be after direction:";
+        ErrorMessage = "can't read direction or chip type";
         return NULL;
       }
 
-      FileRead(fp, &c, 1);
-      if (c != '(')
+      TRigidChipsDirection direct = rdCore;
+      if (key == "n")
+        direct = rdNorth;
+      else if (key == "e")
+        direct = rdEast;
+      else if (key == "w")
+        direct = rdWest;
+      else if (key == "s")
+        direct = rdSouth;
+
+      if (direct != rdCore)
+      {
+        if (FileRead(fp, &c, 1) != 1 || c != ':')
+        {
+          ErrorMessage = ": must be after direction";
+          return NULL;
+        }
+
+        key = readkey(fp).LowerCase();
+        if (key == "")
+        {
+          ErrorMessage = "chip type must be after direction:";
+          return NULL;
+        }
+      }
+      else
+        direct = rdNorth;
+
+      if (FileRead(fp, &c, 1) != 1 || c != '(')
       {
         ErrorMessage = "open square bracket must be after chip type";
         return NULL;
@@ -443,7 +467,7 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
       stack->Push(parent);
       parent = chip;
 
-      while (skipsp(fp), skipcomment(fp));
+      while (skipsp(fp), readcomment(fp) != "");
 
       FileRead(fp, &c, 1);
       if (c != '{')
@@ -451,7 +475,7 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
         ErrorMessage = "open bracket must be after chip definition";
         return NULL;
       }
-      while (skipsp(fp), skipcomment(fp));
+      while (skipsp(fp), readcomment(fp) != "");
     }
   }
   __finally
@@ -465,8 +489,8 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
     ErrorMessage = "close bracket of body was not found";
     return NULL;
   }
-  while (skipsp(fp), skipcomment(fp));
-  
+  while (skipsp(fp), readcomment(fp) != "");
+
   return core;
 }
 //---------------------------------------------------------------------------
@@ -540,11 +564,13 @@ AnsiString TRCDLoader::readkey(TStringStream *stream)
   return key;
 }
 //---------------------------------------------------------------------------
-TRigidChip* TRCDLoader::StringToChip(AnsiString str)
+TRigidChip* TRCDLoader::StringToChip(AnsiString str, TRigidChip *addto)
 {
   ErrorMessage = "";
-  TRigidChip *parent = NULL;
-  
+  TRigidChip *parent = addto;
+
+  TRigidChip *add = NULL;
+  TList *adds = new TList;
   TStringStream *stream = new TStringStream(str);
   TStack *stack = new TStack;
   try
@@ -564,39 +590,50 @@ TRigidChip* TRCDLoader::StringToChip(AnsiString str)
             ErrorMessage = "too many close bracket\n";
             return NULL;
           }
-          break;
+          parent = NULL;
+          continue;
         }
         parent = (TRigidChip*)stack->Pop();
         continue;
       }
-
-      TRigidChipsDirection direct;
-      if ('a' <= c && c <= 'z') c += 'A' - 'a';
-      if (c == 'N') direct = rdNorth;
-      else if (c == 'E') direct = rdEast;
-      else if (c == 'W') direct = rdWest;
-      else if (c == 'S') direct = rdSouth;
-      else
-      {
-        ErrorMessage = "Unknown direction (" + AnsiString(c) + ")";
-        return NULL;
-      }
-
-      if (stream->Read(&c, 1) != 1 || c != ':')
-      {
-        ErrorMessage = ": must be after direction";
-        return NULL;
-      }
+      stream->Seek(-1, soFromCurrent);
 
       AnsiString key = readkey(stream).LowerCase();
       if (key == "")
       {
-        ErrorMessage = "chip type must be after direction:";
+        ErrorMessage = "can't read direction or chip type";
         return NULL;
       }
 
-      stream->Read(&c, 1);
-      if (c != '(')
+      TRigidChipsDirection direct = rdCore;
+      if (key == "n")
+        direct = rdNorth;
+      else if (key == "e")
+        direct = rdEast;
+      else if (key == "w")
+        direct = rdWest;
+      else if (key == "s")
+        direct = rdSouth;
+
+      if (direct != rdCore)
+      {
+        if (stream->Read(&c, 1) != 1 || c != ':')
+        {
+          ErrorMessage = ": must be after direction";
+          return NULL;
+        }
+
+        key = readkey(stream).LowerCase();
+        if (key == "")
+        {
+          ErrorMessage = "chip type must be after direction:";
+          return NULL;
+        }
+      }
+      else
+        direct = rdNorth;
+
+      if (stream->Read(&c, 1) != 1 || c != '(')
       {
         ErrorMessage = "open square bracket must be after chip type";
         return NULL;
@@ -640,6 +677,8 @@ TRigidChip* TRCDLoader::StringToChip(AnsiString str)
       chip->SetOptions(readto(stream, ')'));
       chip->Direction = direct;
 
+      if (parent == addto && stack->Count() == 0)
+        adds->Add((TObject*)chip);
       if (parent)
       {
         parent->AddSubChip(chip);
@@ -660,15 +699,27 @@ TRigidChip* TRCDLoader::StringToChip(AnsiString str)
   }
   __finally
   {
-    while (stack->Count() > 0)
-      parent = (TRigidChip*)stack->Pop();
     if (ErrorMessage != "")
-      delete parent;
+    {
+      for (int i = adds->Count-1; i >= 0; i --)
+        delete (TRigidChip*)adds->Items[i];
+      adds->Clear();
+    }
     delete stream;
     delete stack;
+    if (adds->Count > 0)
+    {
+      add = (TRigidChip*)adds->Items[0];
+      if (addto == NULL)
+      {
+        for (int i = adds->Count-1; i >= 1; i --)
+          delete (TRigidChip*)adds->Items[i];
+      }
+    }
+    delete adds;
   }
 
-  return parent;
+  return add;
 }
 //---------------------------------------------------------------------------
 

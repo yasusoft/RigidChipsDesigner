@@ -129,6 +129,8 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   glClearColor(0, 0, 0, 0);
   glViewport(0, 0, PaintPanel->Width, PaintPanel->Height);
 
+  KeyDefViewInitilizeClick(Sender);
+
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glFrustum(-2, 2, -2, 2, 10, 1000);
@@ -195,6 +197,32 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   DragAcceptFiles(Handle, true);
   WM_RIGHTCHIP_LOAD = RegisterWindowMessage("WM_RIGHTCHIP_LOAD");
 
+  TIniFile *ini = NULL;
+  try
+  {
+    ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
+    KeySelectAdd->Checked = ini->ReadBool("Option", "SelectAdd", KeySelectAdd->Checked);
+    KeyShowVoidOptions->Checked = ini->ReadBool("Option", "ShowVoid", KeyShowVoidOptions->Checked);
+    def_cx = ini->ReadFloat("Option", "CameraX", def_cx);
+    def_cy = ini->ReadFloat("Option", "CameraY", def_cy);
+    def_cz = ini->ReadFloat("Option", "CameraZ", def_cz);
+    for (int i = 0; i < 16; i ++)
+      def_cmat[i] = ini->ReadFloat("Option", "Camera"+IntToStr(i), def_cmat[i]);
+    RCDSaver->optObfuscate = ini->ReadBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
+    RCDSaver->optSpaceAfterBlockType = ini->ReadBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
+    RCDSaver->optNewLineAfterBlockType = ini->ReadBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
+    RCDSaver->optSpaceAfterOptions = ini->ReadBool("OptionSave", "SpaceOption", RCDSaver->optSpaceAfterOptions);
+    RCDSaver->optNewLineAfterOptions = ini->ReadBool("OptionSave", "NewLineOption", RCDSaver->optNewLineAfterOptions);
+    RCDSaver->optSpaceAfterComma = ini->ReadBool("OptionSave", "SpaceComma", RCDSaver->optSpaceAfterComma);
+    RCDSaver->optNoSubNoNewLine = ini->ReadBool("OptionSave", "NoSubNoNewLine", RCDSaver->optNoSubNoNewLine);
+    delete ini;
+  }
+  catch (...)
+  {
+    if (ini)
+      delete ini;
+  }
+
   if (ParamCount() >= 1 && FileExists(ParamStr(1)))
   {
     Origin = Core = RCDLoader->Load(ParamStr(1));
@@ -214,26 +242,6 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   }
   if (Core == NULL)
     KeyNewClick(Sender);
-
-  TIniFile *ini = NULL;
-  try
-  {
-    ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
-    KeySelectAdd->Checked = ini->ReadBool("Option", "SelectAdd", KeySelectAdd->Checked);
-    RCDSaver->optObfuscate = ini->ReadBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
-    RCDSaver->optSpaceAfterBlockType = ini->ReadBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
-    RCDSaver->optNewLineAfterBlockType = ini->ReadBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
-    RCDSaver->optSpaceAfterOptions = ini->ReadBool("OptionSave", "SpaceOption", RCDSaver->optSpaceAfterOptions);
-    RCDSaver->optNewLineAfterOptions = ini->ReadBool("OptionSave", "NewLineOption", RCDSaver->optNewLineAfterOptions);
-    RCDSaver->optSpaceAfterComma = ini->ReadBool("OptionSave", "SpaceComma", RCDSaver->optSpaceAfterComma);
-    RCDSaver->optNoSubNoNewLine = ini->ReadBool("OptionSave", "NoSubNoNewLine", RCDSaver->optNoSubNoNewLine);
-    delete ini;
-  }
-  catch (...)
-  {
-    if (ini)
-      delete ini;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::FormDestroy(TObject *Sender)
@@ -259,6 +267,12 @@ void __fastcall TForm1::FormClose(TObject *Sender, TCloseAction &Action)
   {
     ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
     ini->WriteBool("Option", "SelectAdd", KeySelectAdd->Checked);
+    ini->WriteBool("Option", "ShowVoid", KeyShowVoidOptions->Checked);
+    ini->WriteFloat("Option", "CameraX", def_cx);
+    ini->WriteFloat("Option", "CameraY", def_cy);
+    ini->WriteFloat("Option", "CameraZ", def_cz);
+    for (int i = 0; i < 16; i ++)
+      ini->WriteFloat("Option", "Camera"+IntToStr(i), def_cmat[i]);
     ini->WriteBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     ini->WriteBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
     ini->WriteBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
@@ -337,6 +351,41 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
       }
     }
     OptionsEditor->Strings->Assign(chip->Options);
+    if (KeyShowVoidOptions->Checked)
+    {
+      bool core = chip->GetType() == ctCore;
+      bool frame = chip->GetType() == ctFrame
+             || chip->GetType() == ctRudderF
+             || chip->GetType() == ctTrimF;
+      bool wheel = chip->GetType() == ctWheel
+             || chip->GetType() == ctRLW;
+      bool jet = chip->GetType() == ctJet;
+      bool arm = chip->GetType() == ctArm;
+      bool cowl = chip->GetType() == ctCowl;
+
+      int i, j = OptionsEditor->Strings->Count;
+      #define VOIDOPT0(name) {\
+        i = j; \
+        if ((j = OptionsEditor->Strings->IndexOfName(name)) == -1) \
+          j = i; \
+      }
+      #define VOIDOPT(name) {\
+        i = j; \
+        if ((j = OptionsEditor->Strings->IndexOfName(name)) == -1) \
+          OptionsEditor->Strings->Insert(j = i, name "="); \
+      }
+      VOIDOPT0("user2");
+      VOIDOPT0("user1");
+      VOIDOPT("name");
+      if (!core) VOIDOPT("damper");
+      if (!core) VOIDOPT("spring");
+      if (wheel || jet) VOIDOPT("effect");
+      VOIDOPT("color");
+      if (frame || wheel || jet || arm || cowl) VOIDOPT("option");
+      if (wheel) VOIDOPT("brake");
+      if (wheel || jet || arm) VOIDOPT("power");
+      if (!core) VOIDOPT("angle");
+    }
     ComboDirection->ItemIndex = chip->Direction - 1;
     ComboType->ItemIndex = ComboType->Items->IndexOf(chip->GetTypeString());
 
@@ -350,6 +399,13 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
     ComboType->ItemIndex = -1;
     OptionsEditor->Strings->Clear();
   }
+
+  ButtonParent->Enabled = Core->Select && Core->Select->Parent;
+  ButtonPlus->Enabled = Core->Select && Core->Select->Parent;
+  ButtonMinus->Enabled = Core->Select && Core->Select->Parent;
+  ComboDirection->Enabled = Core->Select && Core->Select != Core;
+  ComboType->Enabled = Core->Select && Core->Select != Core;
+  OptionsEditor->Enabled = Core->Select;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::Display()
@@ -493,14 +549,11 @@ void __fastcall TForm1::PaintPanelMouseDown(TObject *Sender, TMouseButton Button
   {
     if (Core)
       SelectionChange(NULL);
-    camera_x = 0;
-    camera_y = 0;
-    camera_z = 0;
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
-    glPopMatrix();
+    camera_x = def_cx;
+    camera_y = def_cy;
+    camera_z = def_cz;
+    for (int i = 0; i < 16; i ++)
+      camera_matrix[i] = def_cmat[i];
     Display();
   }
   else if (Button == mbLeft)
@@ -522,8 +575,8 @@ void __fastcall TForm1::PaintPanelMouseMove(TObject *Sender,
   MouseY = Y;
   if (mouse_left && mouse_right)
   {
-    camera_x = mouse_cx - (X - mouse_x) / 50.0;
-    camera_y = mouse_cy + (Y - mouse_y) / 50.0;
+    camera_x = mouse_cx - (X - mouse_x) / 25.0;
+    camera_y = mouse_cy + (Y - mouse_y) / 25.0;
     Display();
   }
   else if (mouse_right)
@@ -614,11 +667,30 @@ void __fastcall TForm1::Timer1Timer(TObject *Sender)
 void __fastcall TForm1::CheckAnimeClick(TObject *Sender)
 {
   Timer1->Enabled = CheckAnime->Checked;
+  EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::EditKeyTestKeyDown(TObject *Sender, WORD &Key,
       TShiftState Shift)
 {
+  if (Shift.Contains(ssCtrl))
+  {
+    switch (Key)
+    {
+      case 'Z': KeyUndoClick(Sender); return;
+      case 'X': KeyCutClick(Sender); break;
+      case 'C': KeyCopyClick(Sender); break;
+      case 'V': KeyPasteClick(Sender); break;
+      case VK_DELETE: ButtonMinusClick(Sender); break;
+    }
+    return;
+  }
+  switch (Key)
+  {
+    case VK_ESCAPE: SelectionChange(NULL); return;
+    case VK_DELETE: KeyDeleteClick(Sender); return;
+  }
+
   CheckAnime->Checked = true;
   Timer1->Enabled = true;
   const bool f = true;
@@ -698,6 +770,9 @@ void __fastcall TForm1::EditKeyTestKeyDown(TObject *Sender, WORD &Key,
 void __fastcall TForm1::EditKeyTestKeyUp(TObject *Sender, WORD &Key,
       TShiftState Shift)
 {
+  if (Shift.Contains(ssCtrl))
+    return;
+
   const bool f = false;
   switch (Key)
   {
@@ -751,6 +826,7 @@ void __fastcall TForm1::TimerReloadTimer(TObject *Sender)
 void __fastcall TForm1::CheckClick(TObject *Sender)
 {
   Display();
+  EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
 void ChangeDirection(TRigidChip *chip, int dir)
@@ -815,11 +891,11 @@ void __fastcall TForm1::ComboTypeChange(TObject *Sender)
     for (int i = Core->Select->SubChipsCount-1; i >= 0; i --)
       Core->Select->DelSubChip(i);
 
-    TRigidChip *c = Core->Select;
+    delete Core->Select;
     SelectionChange(chip);
-    delete c;
+
+    Modify = true;
   }
-  Modify = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::OptionsEditorSelectCell(TObject *Sender, int ACol,
@@ -938,6 +1014,7 @@ void __fastcall TForm1::OptionsEditorStringsChange(TObject *Sender)
 void __fastcall TForm1::PopupMenuOptionsPopup(TObject *Sender)
 {
   if (!Core || !Core->Select) return;
+
   bool core = Core->Select->GetType() == ctCore;
   bool frame = Core->Select->GetType() == ctFrame
          || Core->Select->GetType() == ctRudderF
@@ -947,27 +1024,75 @@ void __fastcall TForm1::PopupMenuOptionsPopup(TObject *Sender)
   bool jet = Core->Select->GetType() == ctJet;
   bool arm = Core->Select->GetType() == ctArm;
   bool cowl = Core->Select->GetType() == ctCowl;
-  KeyOptionsAngle->Visible = !core;
-  KeyOptionsSpring->Visible = !core;
-  KeyOptionsDamper->Visible = !core;
-  KeyOptionsPower->Visible = wheel || jet || arm;
-  KeyOptionsBrake->Visible = wheel;
-  KeyOptionsOption->Visible = frame || wheel || jet || arm || cowl;
-  KeyOptionsEffect->Visible = wheel || jet;
-}
-//---------------------------------------------------------------------------
-void __fastcall TForm1::KeyDelOptionClick(TObject *Sender)
-{
-  if (OptionsEditor->Strings->Count)
-    OptionsEditor->DeleteRow(OptionsEditor->Row);
+  KeyOptionsAngle->Visible = OptionsEditor->Strings->IndexOfName("angle") == -1 && !core;
+  KeyOptionsPower->Visible = OptionsEditor->Strings->IndexOfName("power") == -1 && (wheel || jet || arm);
+  KeyOptionsBrake->Visible = OptionsEditor->Strings->IndexOfName("brake") == -1 && wheel;
+  KeyOptionsOption->Visible = OptionsEditor->Strings->IndexOfName("option") == -1 && (frame || wheel || jet || arm || cowl);
+  KeyOptionsColor->Visible = OptionsEditor->Strings->IndexOfName("color") == -1;
+  KeyOptionsEffect->Visible = OptionsEditor->Strings->IndexOfName("effect") == -1 && (wheel || jet);
+  KeyOptionsSpring->Visible = OptionsEditor->Strings->IndexOfName("spring") == -1 && !core;
+  KeyOptionsDamper->Visible = OptionsEditor->Strings->IndexOfName("damper") == -1 && !core;
+  KeyOptionsName->Visible = OptionsEditor->Strings->IndexOfName("name") == -1;
+  KeyOptionsUser1->Visible = OptionsEditor->Strings->IndexOfName("user1") == -1;
+  KeyOptionsUser2->Visible = OptionsEditor->Strings->IndexOfName("user2") == -1;
+
+  KeyOptionUp->Enabled = OptionsEditor->Strings->Count && OptionsEditor->Row > 1;
+  KeyOptionDown->Enabled = OptionsEditor->Row < OptionsEditor->Strings->Count;
+  KeyOptionDelete->Enabled = OptionsEditor->Strings->Count;
+  KeyOptionsSort->Enabled = OptionsEditor->Strings->Count;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOptionsClick(TObject *Sender)
 {
   AnsiString cap = ((TMenuItem*)Sender)->Caption;
+  cap = StringReplace(cap, "&", "", TReplaceFlags());
   OptionsEditor->InsertRow(cap, "", true);
   bool tmp = true;
   OptionsEditorSelectCell(NULL, OptionsEditor->Col, OptionsEditor->Row, tmp);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyOptionUpClick(TObject *Sender)
+{
+  if (OptionsEditor->Strings->Count && OptionsEditor->Row > 1)
+  {
+    OptionsEditor->Strings->Move(OptionsEditor->Row-1, OptionsEditor->Row-2);
+    OptionsEditor->Row = OptionsEditor->Row - 1;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyOptionDownClick(TObject *Sender)
+{
+  if (OptionsEditor->Row < OptionsEditor->Strings->Count)
+  {
+    OptionsEditor->Strings->Move(OptionsEditor->Row-1, OptionsEditor->Row);
+    OptionsEditor->Row = OptionsEditor->Row + 1;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyOptionDeleteClick(TObject *Sender)
+{
+  if (OptionsEditor->Strings->Count)
+    OptionsEditor->DeleteRow(OptionsEditor->Row);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyOptionsSortClick(TObject *Sender)
+{
+  if (!Core || !Core->Select) return;
+  TStringList *list = new TStringList;
+  list->Assign(OptionsEditor->Strings);
+  OptionsEditor->Strings->Clear();
+  OptionsEditor->Strings->Values["angle"]  = list->Values["angle"];
+  OptionsEditor->Strings->Values["power"]  = list->Values["power"];
+  OptionsEditor->Strings->Values["brake"]  = list->Values["brake"];
+  OptionsEditor->Strings->Values["option"] = list->Values["option"];
+  OptionsEditor->Strings->Values["color"]  = list->Values["color"];
+  OptionsEditor->Strings->Values["effect"] = list->Values["effect"];
+  OptionsEditor->Strings->Values["spring"] = list->Values["spring"];
+  OptionsEditor->Strings->Values["damper"] = list->Values["damper"];
+  OptionsEditor->Strings->Values["name"]   = list->Values["name"];
+  OptionsEditor->Strings->Values["user1"]  = list->Values["user1"];
+  OptionsEditor->Strings->Values["user2"]  = list->Values["user2"];
+  SelectionChange(Core->Select);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyAboutClick(TObject *Sender)
@@ -977,6 +1102,7 @@ void __fastcall TForm1::KeyAboutClick(TObject *Sender)
         "Copyright(C) Yasu software\n"
         "http://www.yasu.nu/"
   );
+  EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyNewClick(TObject *Sender)
@@ -1057,6 +1183,15 @@ void __fastcall TForm1::KeySaveClick(TObject *Sender)
     return;
   }
 
+  if (Core->Comment.SubString(1, 5) != "[RCD]")
+  {
+    if (Application->MessageBox(
+        "このモデルファイルにはRigidChipsDesignerシグネチャがありません\n"
+        "保存をするとコメントなどの情報が失われる可能性があります\n"
+        "上書き保存を続行しますか？", "警告", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO)
+      return;
+  }
+
   RCDSaver->Save(FileName, Core);
   Modify = false;
 }
@@ -1078,7 +1213,8 @@ void __fastcall TForm1::KeySaveAsClick(TObject *Sender)
     FileName = SaveDialog->FileName;
     if (ExtractFileExt(FileName) == "")
       FileName = FileName + ".rcd";
-    KeySaveClick(Sender);
+    RCDSaver->Save(FileName, Core);
+    Modify = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -1100,7 +1236,7 @@ void __fastcall TForm1::KeyRCLoadClick(TObject *Sender)
   {
     PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_START, 0);
     for (int i = 1; i <= FileName.Length(); i ++)
-      PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_CHAR, FileName[i]);
+      PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_CHAR, FileName[i] & 0xFF);
     PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_END, 0);
   }
 }
@@ -1115,6 +1251,34 @@ void __fastcall TForm1::KeyAutoReloadClick(TObject *Sender)
 void __fastcall TForm1::KeySelectAddClick(TObject *Sender)
 {
   KeySelectAdd->Checked = !KeySelectAdd->Checked;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyShowVoidOptionsClick(TObject *Sender)
+{
+  KeyShowVoidOptions->Checked = !KeyShowVoidOptions->Checked;
+  SelectionChange(Core->Select);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyDefViewThisClick(TObject *Sender)
+{
+  def_cx = camera_x;
+  def_cy = camera_y;
+  def_cz = camera_z;
+  for (int i = 0; i < 16; i ++)
+    def_cmat[i] = camera_matrix[i];
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::KeyDefViewInitilizeClick(TObject *Sender)
+{
+  def_cx = 0;
+  def_cy = 0;
+  def_cz = 0;
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glGetDoublev(GL_MODELVIEW_MATRIX, def_cmat);
+  glPopMatrix();
+  PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOptSaveClick(TObject *Sender)
@@ -1144,18 +1308,19 @@ void __fastcall TForm1::KeyEditClick(TObject *Sender)
 {
   KeyUndo->Enabled = Core && Core->Deleted;
   
-  KeyCut->Enabled = Core && Core->Select;
-  KeyCopy->Enabled = Core && Core->Select;
+  KeyCut->Enabled = Core && Core->Select && Core->Select != Core;
+  KeyCopy->Enabled = Core && Core->Select && Core->Select != Core;
   KeyPaste->Enabled = Core && Core->Select && Clipboard()->HasFormat(CF_TEXT);
-  KeyDelete->Enabled = Core && Core->Select;
+  KeyDelete->Enabled = Core && Core->Select && Core->Select != Core;
+  KeyDeleteOne->Enabled = Core && Core->Select && Core->Select->Parent;
 
   KeyOrigin->Visible = Core && Core->Select;
 
-  KeyCut2->Visible = Core && Core->Select;
-  KeyCopy2->Visible = Core && Core->Select;
-  KeyPaste2->Visible = Core && Core->Select;
-  KeyPaste2->Enabled = Clipboard()->HasFormat(CF_TEXT);
-  KeyDelete2->Visible = Core && Core->Select;
+  KeyCut2->Enabled = KeyCut->Enabled;
+  KeyCopy2->Enabled = KeyCopy->Enabled;
+  KeyPaste2->Enabled = KeyPaste->Enabled;
+  KeyDelete2->Enabled = KeyDelete->Enabled;
+  KeyDeleteOne2->Enabled = KeyDeleteOne->Enabled;
 
   KeyConvertCowlS->Visible = Core && Core->Select;
 }
@@ -1202,20 +1367,30 @@ void __fastcall TForm1::KeyPasteClick(TObject *Sender)
     return;
   if (!Clipboard()->HasFormat(CF_TEXT))
     return;
-  TRigidChip *chip = RCDLoader->StringToChip(Clipboard()->AsText);
+  TRigidChip *chip = RCDLoader->StringToChip(Clipboard()->AsText, Sender == KeyPasteDirection && Direction != rdCore ? NULL : Core->Select);
   if (chip == NULL)
   {
-    Application->MessageBox(("Invalid clipboard text\n\n" + RCDLoader->ErrorMessage).c_str(), "Paste", MB_ICONERROR | MB_OK);
+    if (RCDLoader->ErrorMessage != "")
+      Application->MessageBox(("Invalid clipboard text\n\n" + RCDLoader->ErrorMessage).c_str(), "Paste", MB_ICONERROR | MB_OK);
     return;
   }
-  if (Direction != rdCore)
-    chip->Direction = Direction;
-  Core->Select->AddSubChip(chip);
+  if (Sender == KeyPasteDirection && Direction != rdCore)
+  {
+    if (Core->Select->GetType() == ctCowl && chip->GetType() != ctCowl)
+    {
+      Application->MessageBox(("Can't join " + chip->GetTypeString() + " to cowl").c_str(), "cowl", MB_ICONERROR | MB_OK);
+      delete chip;
+      return;
+    }
+    ChangeDirection(chip, Direction);
+    Core->Select->AddSubChip(chip);
+  }
   if (KeySelectAdd->Checked)
     SelectionChange(chip);
   else
     SelectionChange(Core->Select);
   Modify = true;
+  Display();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyDeleteClick(TObject *Sender)
@@ -1233,6 +1408,7 @@ void __fastcall TForm1::KeyDeleteClick(TObject *Sender)
   Core->Select->Parent->DelSubChip(Core->Select);
   SelectionChange(Core->Select->Parent);
   Modify = true;
+  Display();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOriginClick(TObject *Sender)
@@ -1293,6 +1469,7 @@ void __fastcall TForm1::KeyConvertCowlClick(TObject *Sender)
 
   SelectionChange(NULL);
   ConvertCowl(Core);
+  EditKeyTest->SetFocus();
   Modify = true;
 }
 //---------------------------------------------------------------------------
@@ -1304,6 +1481,7 @@ void __fastcall TForm1::KeyConvertCowlSClick(TObject *Sender)
   ConvertCowl(Core->Select);
   SelectionChange(NULL);
   Modify = true;
+  Display();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ListNorthContextPopup(TObject *Sender,
@@ -1343,6 +1521,7 @@ void __fastcall TForm1::KeyAddChipClick(TObject *Sender)
     return;
 
   AnsiString cap = ((TMenuItem*)Sender)->Caption;
+  cap = StringReplace(cap, "&", "", TReplaceFlags());
   if (Core->Select->GetType() == ctCowl && cap != "Cowl")
   {
     Application->MessageBox(("Can't join " + cap + " to cowl").c_str(), "cowl", MB_ICONERROR | MB_OK);
@@ -1356,11 +1535,77 @@ void __fastcall TForm1::KeyAddChipClick(TObject *Sender)
     if (Direction != rdCore)
       chip->Direction = Direction;
     Core->Select->AddSubChip(chip);
+    Modify = true;
   }
   if (KeySelectAdd->Checked)
     SelectionChange(chip);
   else
     SelectionChange(Core->Select);
+  EditKeyTest->SetFocus();
+  Display();
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ButtonPlusClick(TObject *Sender)
+{
+  if (!Core || !Core->Select) return;
+  if (!Core->Select->Parent) return;
+
+  bool copy = true;
+  AnsiString t = Core->Select->GetTypeString();
+  if (Core->Select->GetType() != ctChip
+   && Core->Select->GetType() != ctWeight
+   && Core->Select->GetType() != ctFrame
+   && Core->Select->GetType() != ctCowl
+  )
+  {
+    t = "Chip";
+    copy = false;
+  }
+
+  t = "N:" + t + "(){}";
+  TRigidChip *chip = RCDLoader->StringToChip(t);
+  if (chip)
+  {
+    Core->Select->Parent->AddSubChip(chip);
+    chip->Direction = Core->Select->Direction;
+    if (copy)
+    {
+      chip->Options->Values["option"] = Core->Select->Options->Values["option"];
+      chip->Options->Values["color"] = Core->Select->Options->Values["color"];
+      chip->Options->Values["spring"] = Core->Select->Options->Values["spring"];
+      chip->Options->Values["damper"] = Core->Select->Options->Values["damper"];
+    }
+    
+    Core->Select->Parent->DelSubChip(Core->Select);
+    chip->AddSubChip(Core->Select);
+
+    SelectionChange(chip);
+    Modify = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ButtonMinusClick(TObject *Sender)
+{
+  if (!Core || !Core->Select) return;
+  if (!Core->Select->Parent) return;
+
+  TRigidChip *sel = Core->Select->Parent;
+  for (int i = 0; i < Core->Select->SubChipsCount; i ++)
+    if (Core->Select->SubChips[i]->Direction == Core->Select->Direction)
+    {
+      sel = Core->Select->SubChips[i];
+      break;
+    }
+
+  for (int i = 0; i < Core->Select->SubChipsCount; i ++)
+    Core->Select->Parent->AddSubChip(Core->Select->SubChips[i]);
+  for (int i = Core->Select->SubChipsCount-1; i >= 0; i --)
+    Core->Select->DelSubChip(i);
+
+  delete Core->Select;
+  SelectionChange(sel);
+
+  EditKeyTest->SetFocus();
   Modify = true;
 }
 //---------------------------------------------------------------------------
@@ -1368,6 +1613,7 @@ void __fastcall TForm1::ButtonParentClick(TObject *Sender)
 {
   if (!Core || !Core->Select) return;
   SelectionChange(Core->Select->Parent);
+  EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ListNorthClick(TObject *Sender)
@@ -1375,6 +1621,7 @@ void __fastcall TForm1::ListNorthClick(TObject *Sender)
   if (!Core || !Core->Select) return;
   if (((TListBox*)Sender)->ItemIndex == -1) return;
   SelectionChange((TRigidChip*)((TListBox*)Sender)->Items->Objects[((TListBox*)Sender)->ItemIndex]);
+  EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::PageControl1Change(TObject *Sender)
@@ -1883,8 +2130,6 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
       };
       int hold = data[5]>>7;
 
-      AnsiString opt;
-
       // パーツ種類
       int type = data[0] & 0xF;
       if (type == 2)
@@ -1899,39 +2144,46 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
         // chip[6];
 
         chip = new TRigidChipChip;
-        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
-        if (color != 0xFFFFFF) opt += AnsiString(opt != "" ? "," : "") + "color=#" + IntToHex(color,6);
+        if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
+        if (color != 0xFFFFFF) chip->Options->Values["color"] = "#"+IntToHex(color,6);
       }
       else if (type == 3)
       { // Xジョイント
-        // ↓飾り
-        chip = new TRigidChipChip;
-        if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
-        chip->Direction = dirmap[invertNS][invertWE][dir];
-        parent->AddSubChip(chip);
+        if (CheckPanekitTruly->Checked)
+        {
+          // ↓飾り
+          chip = new TRigidChipChip;
+          if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
 
-        chip = new TRigidChipFrame;
-        chip->Options->Values["angle"] = IntToStr(-75+angle);
-        chip->Options->Values["damper"] = "1";
-        chip->Options->Values["option"] = "1";
-        chip->Direction = dirmap[invertNS][invertWE][dir];
-        parent->AddSubChip(chip);
-        parent = chip;
-        chip = new TRigidChipFrame;
-        chip->Options->Values["angle"] = "150";
-        chip->Options->Values["damper"] = "1";
-        chip->Options->Values["option"] = "1";
-        chip->Direction = dirmap[invertNS][invertWE][dir];
-        parent->AddSubChip(chip);
-        parent = chip;
+          chip = new TRigidChipFrame;
+          chip->Options->Values["angle"] = IntToStr(-75+angle);
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          chip = new TRigidChipFrame;
+          chip->Options->Values["angle"] = "150";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
 
-        chip = new TRigidChipFrame;
+          chip = new TRigidChipFrame;
+        }
+        else
+          chip = new TRigidChipChip;
 
         for (int j = 0; j < 5; j ++)
         {
           param[j] = param[j] < 24 ? angles[param[j]] : 0;
           // PANEKITとRCは逆
           if (!(invertNS ^ invertWE)) param[j] *= -1;
+          if (!CheckPanekitTruly->Checked)
+            param[j] += angle;
         }
         if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
         {
@@ -1953,50 +2205,53 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
           if (param[0] != 0) chip->Options->Values["angle"] = IntToStr(param[0]);
         if (hold == 0) chip->Options->Values["spring"] = "0.5";
 
-        chip->Options->Values["option"] = "1";
-        chip->Direction = dirmap[invertNS][invertWE][dir];
-        parent->AddSubChip(chip);
-        parent = chip;
-        opt = "";
-        chip = new TRigidChipFrame;
-        chip->Options->Values["angle"] = "-150";
-        chip->Options->Values["damper"] = "1";
-        chip->Options->Values["option"] = "1";
-        chip->Direction = dirmap[invertNS][invertWE][dir];
-        parent->AddSubChip(chip);
-        parent = chip;
+        if (CheckPanekitTruly->Checked)
+        {
+          chip->Options->Values["option"] = "1";
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
+          chip = new TRigidChipFrame;
+          chip->Options->Values["angle"] = "-150";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
 
-        chip = new TRigidChipChip;
-        chip->Options->Values["angle"] = "-105";
-        chip->Options->Values["damper"] = "1";
-        chip->Direction = dirmap[invertNS][invertWE][dir];
-        parent->AddSubChip(chip);
-        parent = chip;
+          chip = new TRigidChipChip;
+          chip->Options->Values["angle"] = "-105";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Direction = dirmap[invertNS][invertWE][dir];
+          parent->AddSubChip(chip);
+          parent = chip;
 
-        chip = NULL;
-        if (dir == rdNorth || dir == rdSouth) invertNS = !invertNS;
-        if (dir == rdEast || dir == rdWest) invertWE = !invertWE;
+          chip = NULL;
+          if (dir == rdNorth || dir == rdSouth) invertNS = !invertNS;
+          if (dir == rdEast || dir == rdWest) invertWE = !invertWE;
+        }
       }
       else if (type == 4 || type == 5)
       { // Y/Zジョイント
         if (CheckPanekitTruly->Checked)
         {
           chip = new TRigidChipFrame;
-          opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(-105+angle);
-          opt += AnsiString(opt != "" ? "," : "") + "damper=1";
-          opt += AnsiString(opt != "" ? "," : "") + "option=1";
-          chip->SetOptions(opt);
+          chip->Options->Values["angle"] = IntToStr(-105+angle);
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
-          opt = "";
           chip = new TRigidChipFrame;
-          chip->SetOptions("angle=-150,damper=1,option=1");
+          chip->Options->Values["angle"] = "-150";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
           chip = new TRigidChipChip;
-          chip->SetOptions("angle=-105,damper=1");
+          chip->Options->Values["angle"] = "-105";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
@@ -2004,14 +2259,12 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
         else if (angle != 0)
         {
           chip = new TRigidChipFrame;
-          opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(180+angle);
-          opt += AnsiString(opt != "" ? "," : "") + "damper=1";
-          opt += AnsiString(opt != "" ? "," : "") + "option=1";
-          chip->SetOptions(opt);
+          chip->Options->Values["angle"] = IntToStr(180+angle);
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
-          opt = "";
           if (dir == rdNorth || dir == rdSouth) invertNS = !invertNS;
           if (dir == rdEast || dir == rdWest) invertWE = !invertWE;
         }
@@ -2038,36 +2291,38 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
             if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
           TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5));
           Core->Variables["JOINT"+IntToStr(i)] = var;
-          opt += AnsiString(opt != "" ? "," : "") + "angle=JOINT"+IntToStr(i);
+          chip->Options->Values["angle"] = "JOINT"+IntToStr(i);
           // キーの追加
           for (int j = 1; j < 5; j ++)
             if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "JOINT"+IntToStr(i), "step="+IntToStr((param[j]-param[0])/5)));
         }
         else
-          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(param[0]);
-        if (hold == 0) opt += AnsiString(opt != "" ? "," : "") + "spring=0.5";
+          if (param[0] != 0) chip->Options->Values["angle"] = IntToStr(param[0]);
+        if (hold == 0) chip->Options->Values["spring"] = "0.5";
 
         if (CheckPanekitTruly->Checked)
         {
-          chip->SetOptions(opt);
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
-          opt = "";
 
           chip = new TRigidChipFrame;
-          chip->SetOptions("angle=-105,damper=1,option=1");
+          chip->Options->Values["angle"] = "-105";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
-          opt = "";
           chip = new TRigidChipFrame;
-          chip->SetOptions("angle=-150,damper=1,option=1");
+          chip->Options->Values["angle"] = "-150";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+          chip->Options->Values["option"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
           chip = new TRigidChipChip;
-          chip->SetOptions("angle=75,damper=1");
+          chip->Options->Values["angle"] = "75";
+          if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
           chip->Direction = dirmap[invertNS][invertWE][dir];
           parent->AddSubChip(chip);
           parent = chip;
@@ -2080,22 +2335,22 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
       else if (type == 6)
       { // モーター
         chip = new TRigidChipFrame;
-        opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(15+angle);
-        opt += AnsiString(opt != "" ? "," : "") + "damper=1";
-        opt += AnsiString(opt != "" ? "," : "") + "option=1";
-        chip->SetOptions(opt);
+        chip->Options->Values["angle"] = IntToStr(15+angle);
+        if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
         chip->Direction = dirmap[invertNS][invertWE][dir];
         parent->AddSubChip(chip);
         parent = chip;
-        opt = "";
         chip = new TRigidChipFrame;
-        chip->SetOptions("angle=150,damper=1,option=1");
+        chip->Options->Values["angle"] = "150";
+        if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
         chip->Direction = dirmap[invertNS][invertWE][dir];
         parent->AddSubChip(chip);
         parent = chip;
 
         chip = new TRigidChipWheel;
-        opt += AnsiString(opt != "" ? "," : "") + "angle=105";
+        chip->Options->Values["angle"] = "105";
 
         for (int j = 0; j < 5; j ++)
         {
@@ -2114,43 +2369,45 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
             if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
           TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5000));
           Core->Variables["MOTOR"+IntToStr(i)] = var;
-          opt += AnsiString(opt != "" ? "," : "") + "power=MOTOR"+IntToStr(i);
+          chip->Options->Values["power"] = "MOTOR"+IntToStr(i);
           // キーの追加
           for (int j = 1; j < 5; j ++)
             if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "MOTOR"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
         }
         else
-          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "power=" + IntToStr(param[0]);
-        if (hold == 0) opt += AnsiString(opt != "" ? "," : "") + "spring=0.5";
+          if (param[0] != 0) chip->Options->Values["power"] = IntToStr(param[0]);
+        if (hold == 0) chip->Options->Values["spring"] = "0.5";
 
-        chip->SetOptions(opt);
         chip->Direction = dirmap[invertNS][invertWE][dir];
         parent->AddSubChip(chip);
         parent = chip;
-        opt = "";
 
         chip = new TRigidChipFrame;
-        chip->SetOptions("angle=105,damper=1,option=1");
+        chip->Options->Values["angle"] = "105";
+        if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
         chip->Direction = dirmap[invertNS][invertWE][dir];
         parent->AddSubChip(chip);
         parent = chip;
         chip = new TRigidChipFrame;
-        chip->SetOptions("angle=150,damper=1,option=1");
+        chip->Options->Values["angle"] = "150";
+        if (CheckPanekitDamper->State != cbUnchecked) chip->Options->Values["damper"] = "1";
+        chip->Options->Values["option"] = "1";
         chip->Direction = dirmap[invertNS][invertWE][dir];
         parent->AddSubChip(chip);
         parent = chip;
         chip = new TRigidChipFrame;
-        opt = "angle=-165,option=0";
+        chip->Options->Values["angle"] = "-165";
       }
       else if (type == 7)
       { // タイヤ
         chip = new TRigidChipWheel;
-        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+        if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
 
         for (int j = 0; j < 5; j ++)
         {
           param[j] -= 0x0C;
-          param[j] *= 500;
+          param[j] *= 750;
           if (invertNS ^ invertWE) param[j] *= -1;
         }
         if (button[1] != -1 || button[2] != -1 || button[3] != -1 || button[4] != -1)
@@ -2162,20 +2419,20 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
           int max = -99999;
           for (int j = 0; j < 5; j ++)
             if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
-          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*500));
+          TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*1000));
           Core->Variables["TIRE"+IntToStr(i)] = var;
-          opt += AnsiString(opt != "" ? "," : "") + "power=TIRE"+IntToStr(i);
+          chip->Options->Values["power"] = "TIRE"+IntToStr(i);
           // キーの追加
           for (int j = 1; j < 5; j ++)
-            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "TIRE"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
+            if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "TIRE"+IntToStr(i), "step="+IntToStr((param[j]-param[0])/5)));
         }
         else
-          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "power=" + IntToStr(param[0]);
+          if (param[0] != 0) chip->Options->Values["power"] = IntToStr(param[0]);
       }
       else if (type == 8)
       { // ジェット
         chip = new TRigidChipJet;
-        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+        if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
 
         for (int j = 0; j < 5; j ++)
         {
@@ -2194,18 +2451,18 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
             if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
           TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(hold*5000));
           Core->Variables["JET"+IntToStr(i)] = var;
-          opt += AnsiString(opt != "" ? "," : "") + "power=JET"+IntToStr(i);
+          chip->Options->Values["power"] = "JET"+IntToStr(i);
           // キーの追加
           for (int j = 1; j < 5; j ++)
             if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "JET"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
         }
         else
-          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "power=" + IntToStr(param[0]);
+          if (param[0] != 0) chip->Options->Values["power"] = IntToStr(param[0]);
       }
       else if (type == 9)
       { // シューター
         chip = new TRigidChipArm;
-        if (angle != 0) opt += AnsiString(opt != "" ? "," : "") + "angle=" + IntToStr(angle);
+        if (angle != 0) chip->Options->Values["angle"] = IntToStr(angle);
 
         for (int j = 0; j < 5; j ++)
         {
@@ -2223,14 +2480,18 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
             if (j == 0 || button[j] != -1 && param[j] > max) max = param[j];
           TRigidChipsVariable *var = new TRigidChipsVariable(Core, "default="+IntToStr(param[0])+",min="+IntToStr(min)+",max="+IntToStr(max)+",step="+IntToStr(max));
           Core->Variables["SHOT"+IntToStr(i)] = var;
-          opt += AnsiString(opt != "" ? "," : "") + "option="+IntToStr(max);
-          opt += AnsiString(opt != "" ? "," : "") + "power=SHOT"+IntToStr(i);
+          chip->Options->Values["option"] = IntToStr(max);
+          chip->Options->Values["power"] = "SHOT"+IntToStr(i);
           // キーの追加
           for (int j = 1; j < 5; j ++)
             if (button[j] != -1) Core->AddKey(IntToStr(button[j]), new TRigidChipsKey(Core, "SHOT"+IntToStr(i), "step="+IntToStr(param[j]-param[0])));
         }
         else
-          if (param[0] != 0) opt += AnsiString(opt != "" ? "," : "") + "option=" + IntToStr(param[0]) + ",power=" + IntToStr(param[0]);
+          if (param[0] != 0)
+          {
+            chip->Options->Values["option"] = IntToStr(param[0]);
+            chip->Options->Values["power"] = IntToStr(param[0]);
+          }
       }
       else
       {
@@ -2239,9 +2500,10 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
       }
       if (chip)
       {
-        chip->SetOptions(opt);
+        if (CheckPanekitDamper->State == cbChecked) chip->Options->Values["damper"] = "1";
         chip->Direction = dirmap[invertNS][invertWE][dir];
         parent->AddSubChip(chip);
+        parent = chip;
       }
       
       if (con == 0)
@@ -2249,11 +2511,11 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
         if (stackChip.size() == 0)
           break;
 
-        chip = stackChip.top(); stackChip.pop();
+        parent = stackChip.top(); stackChip.pop();
         con = stackCon.top(); stackCon.pop();
         invertNS = stackInvertNS.top(); stackInvertNS.pop();
         invertWE = stackInvertWE.top(); stackInvertWE.pop();
-        dir = dirmap[invertNS][invertWE][chip->Direction];
+        dir = dirmap[invertNS][invertWE][parent->Direction];
       }
       if (con & 1)
       { // 直進方向に接続あり
@@ -2269,8 +2531,6 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
         con &= ~8;
         dir = (TRigidChipsDirection)(((dir - 2 + 4) % 4) + 1);
       }
-      if (chip)
-        parent = chip;
       if (con)
       { // 他にも接続あり
         stackChip.push(parent);
@@ -2283,8 +2543,11 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
 
   // 仕様コメント
   if (err == "")
+  {
     for (int i = 0; i < 8; i ++)
       MemoPanekit->Lines->Add(ReadPanekitString(fp, 15));
+    Core->Comment = "[RCD]" + ListPanekit->Items->Strings[ListPanekit->ItemIndex] + "\r\n" + MemoPanekit->Text;
+  }
   else
   {
     MemoPanekit->Lines->Add(err);

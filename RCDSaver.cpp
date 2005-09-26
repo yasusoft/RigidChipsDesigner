@@ -42,12 +42,26 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
   }
   else
     tab = "\t";
+
+  AnsiString sp = " ";
+  AnsiString br = "\n";
+
+  AnsiString dir[] = {"", "N:", "E:", "S:", "W:"};
+  if (optObfuscate)
+  {
+    afteropt = "";
+    aftercomma = "";
+    tab = "";
+    tabs = "";
+    sp = "";
+    br = "";
+    dir[1] = "";
+  }
   // settings end
 
   tabs += tab;
   AnsiString str = tabs;
 
-  AnsiString dir[] = {"", "N:", "E:", "S:", "W:"};
   str += dir[chip->Direction];
 
   str += chip->GetTypeString();
@@ -67,23 +81,15 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
   {
     str += afteropt;
     if (optNewLineAfterOptions) str += tabs;
-    str += "{\n";
+    str += "{" + br;
     for (int i = 0; i < chip->SubChipsCount; i ++)
       str += ChipToString(tabs, chip->SubChips[i]);
-    str += tabs + "}\n";
+    str += tabs + "}" + br;
   }
   else if (optSpaceAfterOptions)
-    str += " { }\n";
+    str += sp + "{" + sp + "}" + br;
   else
-    str += "{}\n";
-
-  if (optObfuscate)
-  {
-    str = StringReplace(str, " ", "", TReplaceFlags() << rfReplaceAll);
-    str = StringReplace(str, "\t", "", TReplaceFlags() << rfReplaceAll);
-    str = StringReplace(str, "\r", "", TReplaceFlags() << rfReplaceAll);
-    str = StringReplace(str, "\n", "", TReplaceFlags() << rfReplaceAll);
-  }
+    str += "{}" + br;
 
   return str;
 }
@@ -117,6 +123,22 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
     }
     else
       tab = "\t";
+
+    // Comment
+    if (core->Comment.SubString(1, 5) != "[RCD]")
+      core->Comment = "[RCD]" + core->Comment;
+    lines->Text = core->Comment;
+    AnsiString cmt;
+    for (int i = 0; i < lines->Count; i ++)
+      if (lines->Strings[i] != "")
+        lines->Strings[i] = "// " + lines->Strings[i];
+      else
+        lines->Strings[i] = "//";
+    if (optObfuscate)
+    {
+      cmt = lines->Text;
+      lines->Clear();
+    }
 
     // Val
     lines->Add("Val" + aftertype + "{");
@@ -192,7 +214,7 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
       str = StringReplace(str, "\t", "", TReplaceFlags() << rfReplaceAll);
       str = StringReplace(str, "\r", "", TReplaceFlags() << rfReplaceAll);
       str = StringReplace(str, "\n", "", TReplaceFlags() << rfReplaceAll);
-      lines->Text = str;
+      lines->Text = cmt + str;
     }
 
     // Script or Lua
