@@ -52,6 +52,7 @@ TRigidChipsVariable::TRigidChipsVariable(TRigidChipCore *c, AnsiString opt)
 //---------------------------------------------------------------------------
 void TRigidChipsVariable::SetValue(double v)
 {
+  if (FValue == v) return;
   Modify = true;
   if (v < Min)
     FValue = Min;

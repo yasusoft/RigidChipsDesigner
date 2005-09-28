@@ -4,11 +4,12 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="RCD.exe"/>
-    <OBJFILES value="RCD.obj Unit1.obj RigidChip.obj RCDLoader.obj RCDSaver.obj RCScript.obj"/>
+    <OBJFILES value="RCD.obj Unit1.obj RigidChip.obj RCDLoader.obj RCDSaver.obj RCScript.obj 
+      RCLua.obj"/>
     <RESFILES value="RCD.res textures.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) Unit1.dfm"/>
-    <LIBFILES value=""/>
+    <LIBFILES value="Lua.lib"/>
     <LIBRARIES value="rtl.lib vcl.lib"/>
     <SPARELIBS value="vcl.lib rtl.lib"/>
     <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
@@ -55,6 +56,8 @@
       <FILE FILENAME="RCDSaver.cpp" FORMNAME="" UNITNAME="RCDSaver" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="textures.res" FORMNAME="" UNITNAME="textures.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="RCScript.cpp" FORMNAME="" UNITNAME="RCScript" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RCLua.cpp" FORMNAME="" UNITNAME="RCLua" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Lua.lib" FORMNAME="" UNITNAME="Lua.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

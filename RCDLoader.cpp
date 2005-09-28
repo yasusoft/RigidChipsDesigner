@@ -156,6 +156,8 @@ TRigidChipCore* TRCDLoader::Load(AnsiString filename)
           while (FileRead(fp, &c, 1) == 1)
           {
             s += AnsiString(c);
+            if (c == '\n')
+              break;
             if (c == '\\')
             {
               if (FileRead(fp, &c, 1) == 1)

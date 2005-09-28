@@ -19,6 +19,7 @@
 //---------------------------------------------------------------------------
 class TRCDLoader;
 class TRCDSaver;
+class TRCLua;
 //---------------------------------------------------------------------------
 class TPaintPanel : public TPanel
 { // OnPaintを実装したパネル
@@ -90,63 +91,11 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyOptionsEffect;
         TMenuItem *KeyOptionsUser1;
         TMenuItem *KeyOptionsUser2;
-        TPageControl *PageControl1;
-        TTabSheet *TabVal;
-        TTabSheet *TabKey;
-        TTabSheet *TabBody;
-        TListBox *ListNorth;
-        TButton *ButtonParent;
-        TListBox *ListEast;
-        TListBox *ListWest;
-        TListBox *ListSouth;
-        TLabel *LabelDirection;
-        TLabel *LabelType;
-        TComboBox *ComboType;
-        TComboBox *ComboDirection;
-        TValueListEditor *OptionsEditor;
-        TEdit *EditKeyTest;
-        TCheckBox *CheckBalloon;
-        TCheckBox *CheckGhost;
-        TCheckBox *CheckCowl;
-        TListBox *ListVariables;
-        TPanel *PanelVariable;
-        TLabel *LabelVarName;
-        TEdit *EditVarName;
-        TLabel *LabelVarDefault;
-        TEdit *EditVarDefault;
-        TLabel *LabelVarMin;
-        TEdit *EditVarMin;
-        TLabel *LabelVarMax;
-        TEdit *EditVarMax;
-        TLabel *LabelVarStep;
-        TEdit *EditVarStep;
-        TButton *ButtonVarOk;
-        TCheckBox *CheckVarDisp;
-        TPanel *PanelVarLabel;
-        TButton *ButtonVarDel;
-        TButton *ButtonVarColor;
-        TLabel *LabelKeyNo;
-        TComboBox *ComboKeyNo;
-        TLabel *LabelKeyVar;
-        TComboBox *ComboKeyVarName;
-        TLabel *LabelKeyVarName;
-        TLabel *LabelKeyStep;
-        TEdit *EditKeyStep;
-        TListBox *ListKeyVar;
-        TButton *ButtonKeyDel;
-        TButton *ButtonKeyOk;
-        TCheckBox *CheckAnime;
         TMenuItem *Help1;
         TMenuItem *KeyAbout;
         TMenuItem *KeyConvertCowl;
         TMenuItem *KeyBar2;
         TMenuItem *KeyConvertCowlS;
-        TTabSheet *TabScript;
-        TPanel *PanelScript;
-        TButton *ButtonScriptReset;
-        TMemo *MemoScript;
-        TListBox *ScriptOut;
-        TButton *ButtonScriptStop;
         TPopupMenu *PopupMenuAdd;
         TMenuItem *KeyAddChip;
         TMenuItem *KeyAddFrame;
@@ -160,25 +109,15 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyAddTrimF;
         TMenuItem *KeyAddArm;
         TMenuItem *KeyAddCowl;
-        TCheckBox *CheckRotate;
         TMenuItem *KeyOptionDelete;
         TMenuItem *N1;
         TMenuItem *KeyUndo;
         TMenuItem *KeyEditBar1;
-        TTabSheet *TabPanekit;
-        TListBox *ListPanekit;
-        TPanel *PanelPanekit;
-        TEdit *EditPanekitFile;
-        TButton *ButtonPanekitBrowse;
-        TLabel *LabelPanekitFile;
-        TMemo *MemoPanekit;
         TOpenDialog *OpenDialogPanekit;
         TMenuItem *KeyFileBar2;
         TMenuItem *KeyImport;
-        TCheckBox *CheckPanekitTruly;
         TMenuItem *KeySelectAdd;
         TMenuItem *KeySaveObfuscate;
-        TCheckBox *CheckPanekitDamper;
         TMenuItem *KeyShowVoidOptions;
         TMenuItem *KeyOptionUp;
         TMenuItem *KeyOptionDown;
@@ -188,10 +127,83 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyDefViewThis;
         TMenuItem *KeyDefViewInitilize;
         TMenuItem *KeyDefaultView;
-        TButton *ButtonPlus;
-        TButton *ButtonMinus;
         TMenuItem *KeyDeleteOne2;
         TMenuItem *KeyDeleteOne;
+        TPanel *PanelRight;
+        TPageControl *PageControl1;
+        TTabSheet *TabVal;
+        TListBox *ListVariables;
+        TPanel *PanelVariable;
+        TLabel *LabelVarName;
+        TLabel *LabelVarDefault;
+        TLabel *LabelVarMin;
+        TLabel *LabelVarMax;
+        TLabel *LabelVarStep;
+        TEdit *EditVarName;
+        TEdit *EditVarDefault;
+        TEdit *EditVarMin;
+        TEdit *EditVarMax;
+        TEdit *EditVarStep;
+        TButton *ButtonVarOk;
+        TCheckBox *CheckVarDisp;
+        TButton *ButtonVarColor;
+        TPanel *PanelVarLabel;
+        TButton *ButtonVarDel;
+        TTabSheet *TabKey;
+        TLabel *LabelKeyNo;
+        TLabel *LabelKeyVar;
+        TLabel *LabelKeyVarName;
+        TLabel *LabelKeyStep;
+        TComboBox *ComboKeyNo;
+        TComboBox *ComboKeyVarName;
+        TEdit *EditKeyStep;
+        TListBox *ListKeyVar;
+        TButton *ButtonKeyDel;
+        TButton *ButtonKeyOk;
+        TTabSheet *TabBody;
+        TLabel *LabelDirection;
+        TLabel *LabelType;
+        TListBox *ListNorth;
+        TButton *ButtonParent;
+        TListBox *ListEast;
+        TListBox *ListWest;
+        TListBox *ListSouth;
+        TComboBox *ComboType;
+        TComboBox *ComboDirection;
+        TValueListEditor *OptionsEditor;
+        TCheckBox *CheckRotate;
+        TButton *ButtonPlus;
+        TButton *ButtonMinus;
+        TTabSheet *TabScript;
+        TSplitter *SplitterScript;
+        TPanel *PanelScript;
+        TButton *ButtonScriptReset;
+        TButton *ButtonScriptStop;
+        TMemo *MemoScript;
+        TMemo *ScriptOut;
+        TTabSheet *TabLua;
+        TSplitter *SplitterLua;
+        TPanel *Panel1;
+        TButton *ButtonSetLua;
+        TButton *ButtonStopLua;
+        TMemo *MemoLua;
+        TMemo *LuaOut;
+        TTabSheet *TabPanekit;
+        TListBox *ListPanekit;
+        TPanel *PanelPanekit;
+        TLabel *LabelPanekitFile;
+        TEdit *EditPanekitFile;
+        TButton *ButtonPanekitBrowse;
+        TCheckBox *CheckPanekitTruly;
+        TCheckBox *CheckPanekitDamper;
+        TMemo *MemoPanekit;
+        TEdit *EditKeyTest;
+        TCheckBox *CheckAnime;
+        TSplitter *Splitter1;
+        TMenuItem *KeyHide;
+        TMenuItem *KeyHideCowl;
+        TMenuItem *KeyHideGhost;
+        TMenuItem *KeyHideBalloon;
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall PaintPanelPaint(TObject *Sender);
         void __fastcall PaintPanelMouseDown(TObject *Sender, TMouseButton Button,
@@ -210,7 +222,6 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall EditKeyTestKeyUp(TObject *Sender, WORD &Key,
           TShiftState Shift);
         void __fastcall TimerReloadTimer(TObject *Sender);
-        void __fastcall CheckClick(TObject *Sender);
         void __fastcall OptionsEditorSelectCell(TObject *Sender, int ACol,
           int ARow, bool &CanSelect);
         void __fastcall OptionsEditorEditButtonClick(TObject *Sender);
@@ -272,6 +283,10 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall KeyDefViewInitilizeClick(TObject *Sender);
         void __fastcall ButtonPlusClick(TObject *Sender);
         void __fastcall ButtonMinusClick(TObject *Sender);
+        void __fastcall ButtonSetLuaClick(TObject *Sender);
+        void __fastcall ButtonStopLuaClick(TObject *Sender);
+        void __fastcall TabBodyResize(TObject *Sender);
+        void __fastcall HideClick(TObject *Sender);
 private:	// ユーザー宣言
         HGLRC ghRC; // レンダリングコンテキスト
         HDC   ghDC; // デバイスコンテキスト
@@ -292,10 +307,11 @@ private:	// ユーザー宣言
         double mouse_cx, mouse_cy, mouse_cz; // 投下時カメラ座標
         double mouse_cm[16]; // 投下時カメラ行列
 
-        bool RunScript;
-
         TRCDLoader *RCDLoader;
         TRCDSaver *RCDSaver;
+
+        bool RunScript, RunLua;
+        TRCLua *RCLua;
 
         AnsiString FFileName;
         void SetCaption()
@@ -331,7 +347,7 @@ protected:
 #pragma warn .8027
 public:		// ユーザー宣言
         TPaintPanel *PaintPanel; // 表示用ウィンドウ
-        bool KeysDown[17];
+        bool Keys[17], KeysOld[17], KeyDown[17], KeyUp[17];
         int MouseX, MouseY;
         bool MouseLeft, MouseMiddle, MouseRight;
         void __fastcall Display();

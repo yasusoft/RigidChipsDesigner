@@ -11,6 +11,7 @@
 #include <IniFiles.hpp>
 #include <Clipbrd.hpp>
 #include <stack>
+#include "RCLua.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -61,9 +62,12 @@ void __fastcall TForm1::WMDropFiles(TWMDropFiles &Msg)
     FileName = filename;
     Modify = false;
     PaintPanelMouseDown(NULL, mbMiddle, TShiftState(), 0, 0);
+    PageControl1->ActivePage = TabVal;
     PageControl1->ActivePage = TabBody;
     ScriptOut->Clear();
-    RunScript = true;
+    LuaOut->Clear();
+    RunScript = false;
+    RunLua = false;
   }
 
   DragFinish(hDrop);
@@ -76,18 +80,21 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   Origin = Core = NULL;
   FileName = "";
   Modify = false;
+  PageControl1->ActivePage = TabVal;
   PageControl1->ActivePage = TabBody;
 
   RCDLoader = new TRCDLoader;
   RCDSaver = new TRCDSaver;
+  RCLua = new TRCLua;
 
   PaintPanel = new TPaintPanel(this);
   PaintPanel->Parent = this;
-  PaintPanel->Left = PaintPanelDummy->Left;
-  PaintPanel->Top = PaintPanelDummy->Top;
-  PaintPanel->Width = PaintPanelDummy->Width;
-  PaintPanel->Height = PaintPanelDummy->Height;
-  PaintPanel->Anchors = TAnchors() << akLeft << akTop << akRight << akBottom; //PaintPanelDummy->Anchors;
+  PaintPanel->Align = alClient;
+  //PaintPanel->Left = PaintPanelDummy->Left;
+  //PaintPanel->Top = PaintPanelDummy->Top;
+  //PaintPanel->Width = PaintPanelDummy->Width;
+  //PaintPanel->Height = PaintPanelDummy->Height;
+  //PaintPanel->Anchors = TAnchors() << akLeft << akTop << akRight << akBottom; //PaintPanelDummy->Anchors;
   PaintPanel->OnMouseDown = PaintPanelMouseDown;
   PaintPanel->OnMouseMove = PaintPanelMouseMove;
   PaintPanel->OnMouseUp = PaintPanelMouseUp;
@@ -201,12 +208,20 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   try
   {
     ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
+    Width = ini->ReadInteger("RCD", "Width", Width);
+    Height = ini->ReadInteger("RCD", "Height", Height);
+    Left = ini->ReadInteger("RCD", "Left", (Screen->Width - Width) / 2);
+    Top = ini->ReadInteger("RCD", "Top", (Screen->Height - Height) / 2);
+    PanelRight->Width = ini->ReadInteger("RCD", "RightWidth", PanelRight->Width);
     KeySelectAdd->Checked = ini->ReadBool("Option", "SelectAdd", KeySelectAdd->Checked);
     KeyShowVoidOptions->Checked = ini->ReadBool("Option", "ShowVoid", KeyShowVoidOptions->Checked);
+    KeyHideCowl->Checked = ini->ReadBool("Option", "HideCowl", KeyHideCowl->Checked);
+    KeyHideGhost->Checked = ini->ReadBool("Option", "HideGhost", KeyHideGhost->Checked);
+    KeyHideBalloon->Checked = ini->ReadBool("Option", "HideBalloon", KeyHideBalloon->Checked);
     def_cx = ini->ReadFloat("Option", "CameraX", def_cx);
     def_cy = ini->ReadFloat("Option", "CameraY", def_cy);
     def_cz = ini->ReadFloat("Option", "CameraZ", def_cz);
-    for (int i = 0; i < 16; i ++)
+    for (int i = 0; i < 12; i ++)
       def_cmat[i] = ini->ReadFloat("Option", "Camera"+IntToStr(i), def_cmat[i]);
     RCDSaver->optObfuscate = ini->ReadBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     RCDSaver->optSpaceAfterBlockType = ini->ReadBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
@@ -235,9 +250,12 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
       FileName = ParamStr(1);
       Modify = false;
       PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
+      PageControl1->ActivePage = TabVal;
       PageControl1->ActivePage = TabBody;
       ScriptOut->Clear();
-      RunScript = true;
+      LuaOut->Clear();
+      RunScript = false;
+      RunLua = false;
     }
   }
   if (Core == NULL)
@@ -256,6 +274,7 @@ void __fastcall TForm1::FormDestroy(TObject *Sender)
 
   delete PaintPanel;
 
+  delete RCLua;
   delete RCDSaver;
   delete RCDLoader;
 }
@@ -266,12 +285,20 @@ void __fastcall TForm1::FormClose(TObject *Sender, TCloseAction &Action)
   try
   {
     ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
+    ini->WriteInteger("RCD", "Left", Left);
+    ini->WriteInteger("RCD", "Top", Top);
+    ini->WriteInteger("RCD", "Width", Width);
+    ini->WriteInteger("RCD", "Height", Height);
+    ini->WriteInteger("RCD", "RightWidth", PanelRight->Width);
     ini->WriteBool("Option", "SelectAdd", KeySelectAdd->Checked);
     ini->WriteBool("Option", "ShowVoid", KeyShowVoidOptions->Checked);
+    ini->WriteBool("Option", "HideCowl", KeyHideCowl->Checked);
+    ini->WriteBool("Option", "HideGhost", KeyHideGhost->Checked);
+    ini->WriteBool("Option", "HideBalloon", KeyHideBalloon->Checked);
     ini->WriteFloat("Option", "CameraX", def_cx);
     ini->WriteFloat("Option", "CameraY", def_cy);
     ini->WriteFloat("Option", "CameraZ", def_cz);
-    for (int i = 0; i < 16; i ++)
+    for (int i = 0; i < 12; i ++)
       ini->WriteFloat("Option", "Camera"+IntToStr(i), def_cmat[i]);
     ini->WriteBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     ini->WriteBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
@@ -413,9 +440,9 @@ void __fastcall TForm1::Display()
   if (!Core)
     return;
 
-  Core->ShowCowl = CheckCowl->Checked;
-  Core->ShowGhost = CheckGhost->Checked;
-  Core->ShowBalloon = CheckBalloon->Checked;
+  Core->ShowCowl = !KeyHideCowl->Checked;
+  Core->ShowGhost = !KeyHideGhost->Checked;
+  Core->ShowBalloon = !KeyHideBalloon->Checked;
 
   if (PickUp)
   {
@@ -634,29 +661,53 @@ void __fastcall TForm1::Timer1Timer(TObject *Sender)
   if (Core)
   {
     Core->CheckVariable();
+    
     for (int i = 0; i < 17; i ++)
-      if (KeysDown[i])
-        Core->ActKey(IntToStr(i));
-    Core->StepVariable();
-    Core->Act();
-
-    if (RunScript && Core->Script->ScriptText != "")
     {
-      ScriptOut->Items->BeginUpdate();
+      if (Keys[i])
+        Core->ActKey(IntToStr(i));
+      KeyDown[i] = Keys[i] != KeysOld[i] && Keys[i];
+      KeyUp[i] = Keys[i] != KeysOld[i] && !Keys[i];
+      KeysOld[i] = Keys[i];
+    }
+
+    if (RunLua && RCLua->ScriptText != "")
+    {
+      LuaOut->Lines->BeginUpdate();
       try {
-        for (int i = 0; i < ScriptOut->Items->Count; i ++)
-          ScriptOut->Items->Strings[i] = "";
+        for (int i = 0; i < LuaOut->Lines->Count; i ++)
+          LuaOut->Lines->Strings[i] = "";
+        RCLua->ErrorMessage = "";
+        if (!RCLua->Run(Core))
+          throw Exception(RCLua->ErrorMessage);
+      } catch (Exception &e) {
+        RunLua = false;
+        LuaOut->Lines->Clear();
+        LuaOut->Lines->Add("LuaError");
+        LuaOut->Lines->Add(e.Message);
+      }
+      LuaOut->Lines->EndUpdate();
+    }
+    else if (RunScript && Core->Script->ScriptText != "")
+    {
+      ScriptOut->Lines->BeginUpdate();
+      try {
+        for (int i = 0; i < ScriptOut->Lines->Count; i ++)
+          ScriptOut->Lines->Strings[i] = "";
         Core->Script->Run();
       } catch (Exception &e) {
         RunScript = false;
-        ScriptOut->Clear();
-        ScriptOut->Items->Add("ScriptError: Near " + IntToStr(Core->Script->ProgramCounter));
-        ScriptOut->Items->Add(e.Message);
+        ScriptOut->Lines->Clear();
+        ScriptOut->Lines->Add("ScriptError: Near " + IntToStr(Core->Script->ProgramCounter));
+        ScriptOut->Lines->Add(e.Message);
         MemoScript->SelStart = Core->Script->ProgramCounter;
         MemoScript->SelLength = 1;
       }
-      ScriptOut->Items->EndUpdate();
+      ScriptOut->Lines->EndUpdate();
     }
+
+    Core->StepVariable();
+    Core->Act();
 
     Display();
     Yield();
@@ -696,23 +747,23 @@ void __fastcall TForm1::EditKeyTestKeyDown(TObject *Sender, WORD &Key,
   const bool f = true;
   switch (Key)
   {
-    case VK_UP: KeysDown[0] = f; break;
-    case VK_DOWN: KeysDown[1] = f; break;
-    case VK_LEFT: KeysDown[2] = f; break;
-    case VK_RIGHT: KeysDown[3] = f; break;
-    case 'Z': case 'z': KeysDown[4] = f; break;
-    case 'X': case 'x': KeysDown[5] = f; break;
-    case 'C': case 'c': KeysDown[6] = f; break;
-    case 'A': case 'a': KeysDown[7] = f; break;
-    case 'S': case 's': KeysDown[8] = f; break;
-    case 'D': case 'd': KeysDown[9] = f; break;
-    case 'V': case 'v': KeysDown[10] = f; break;
-    case 'B': case 'b': KeysDown[11] = f; break;
-    case 'F': case 'f': KeysDown[12] = f; break;
-    case 'G': case 'g': KeysDown[13] = f; break;
-    case 'Q': case 'q': KeysDown[14] = f; break;
-    case 'W': case 'w': KeysDown[15] = f; break;
-    case 'E': case 'e': KeysDown[16] = f; break;
+    case VK_UP: Keys[0] = f; break;
+    case VK_DOWN: Keys[1] = f; break;
+    case VK_LEFT: Keys[2] = f; break;
+    case VK_RIGHT: Keys[3] = f; break;
+    case 'Z': case 'z': Keys[4] = f; break;
+    case 'X': case 'x': Keys[5] = f; break;
+    case 'C': case 'c': Keys[6] = f; break;
+    case 'A': case 'a': Keys[7] = f; break;
+    case 'S': case 's': Keys[8] = f; break;
+    case 'D': case 'd': Keys[9] = f; break;
+    case 'V': case 'v': Keys[10] = f; break;
+    case 'B': case 'b': Keys[11] = f; break;
+    case 'F': case 'f': Keys[12] = f; break;
+    case 'G': case 'g': Keys[13] = f; break;
+    case 'Q': case 'q': Keys[14] = f; break;
+    case 'W': case 'w': Keys[15] = f; break;
+    case 'E': case 'e': Keys[16] = f; break;
 
     case 'K': // ƒJƒƒ‰‚ªã•ûŒü‚Ö‰ñ“]
       glMatrixMode(GL_MODELVIEW);
@@ -776,23 +827,23 @@ void __fastcall TForm1::EditKeyTestKeyUp(TObject *Sender, WORD &Key,
   const bool f = false;
   switch (Key)
   {
-    case VK_UP: KeysDown[0] = f; break;
-    case VK_DOWN: KeysDown[1] = f; break;
-    case VK_LEFT: KeysDown[2] = f; break;
-    case VK_RIGHT: KeysDown[3] = f; break;
-    case 'Z': case 'z': KeysDown[4] = f; break;
-    case 'X': case 'x': KeysDown[5] = f; break;
-    case 'C': case 'c': KeysDown[6] = f; break;
-    case 'A': case 'a': KeysDown[7] = f; break;
-    case 'S': case 's': KeysDown[8] = f; break;
-    case 'D': case 'd': KeysDown[9] = f; break;
-    case 'V': case 'v': KeysDown[10] = f; break;
-    case 'B': case 'b': KeysDown[11] = f; break;
-    case 'F': case 'f': KeysDown[12] = f; break;
-    case 'G': case 'g': KeysDown[13] = f; break;
-    case 'Q': case 'q': KeysDown[14] = f; break;
-    case 'W': case 'w': KeysDown[15] = f; break;
-    case 'E': case 'e': KeysDown[16] = f; break;
+    case VK_UP: Keys[0] = f; break;
+    case VK_DOWN: Keys[1] = f; break;
+    case VK_LEFT: Keys[2] = f; break;
+    case VK_RIGHT: Keys[3] = f; break;
+    case 'Z': case 'z': Keys[4] = f; break;
+    case 'X': case 'x': Keys[5] = f; break;
+    case 'C': case 'c': Keys[6] = f; break;
+    case 'A': case 'a': Keys[7] = f; break;
+    case 'S': case 's': Keys[8] = f; break;
+    case 'D': case 'd': Keys[9] = f; break;
+    case 'V': case 'v': Keys[10] = f; break;
+    case 'B': case 'b': Keys[11] = f; break;
+    case 'F': case 'f': Keys[12] = f; break;
+    case 'G': case 'g': Keys[13] = f; break;
+    case 'Q': case 'q': Keys[14] = f; break;
+    case 'W': case 'w': Keys[15] = f; break;
+    case 'E': case 'e': Keys[16] = f; break;
   }
 }
 //---------------------------------------------------------------------------
@@ -823,8 +874,9 @@ void __fastcall TForm1::TimerReloadTimer(TObject *Sender)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TForm1::CheckClick(TObject *Sender)
+void __fastcall TForm1::HideClick(TObject *Sender)
 {
+  ((TMenuItem*)Sender)->Checked = !((TMenuItem*)Sender)->Checked;
   Display();
   EditKeyTest->SetFocus();
 }
@@ -1131,7 +1183,14 @@ void __fastcall TForm1::KeyNewClick(TObject *Sender)
   Modify = false;
   PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
   if (PageControl1->ActivePage != TabPanekit)
+  {
+    PageControl1->ActivePage = TabVal;
     PageControl1->ActivePage = TabBody;
+  }
+  ScriptOut->Clear();
+  LuaOut->Clear();
+  RunScript = false;
+  RunLua = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOpenClick(TObject *Sender)
@@ -1167,9 +1226,12 @@ void __fastcall TForm1::KeyOpenClick(TObject *Sender)
     FileName = OpenDialog->FileName;
     Modify = false;
     PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
+    PageControl1->ActivePage = TabVal;
     PageControl1->ActivePage = TabBody;
     ScriptOut->Clear();
-    RunScript = true;
+    LuaOut->Clear();
+    RunScript = false;
+    RunLua = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -1513,6 +1575,8 @@ void __fastcall TForm1::PopupMenuAddPopup(TObject *Sender)
   KeyAddTrimF->Visible = sel && !cowl;
   KeyAddArm->Visible = sel && !cowl;
   KeyAddCowl->Visible = sel;
+  KeyPasteDirection->Visible = sel && Direction != rdCore;
+  KeyPasteDirection->Enabled = Clipboard()->HasFormat(CF_TEXT);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyAddChipClick(TObject *Sender)
@@ -1644,6 +1708,11 @@ void __fastcall TForm1::PageControl1Change(TObject *Sender)
   {
     if (Core->Script->ScriptText != MemoScript->Text)
       MemoScript->Text = Core->Script->ScriptText;
+  }
+  else if (PageControl1->ActivePage == TabLua)
+  {
+    if (Core->Lua != MemoLua->Text)
+      MemoLua->Text = Core->Lua;
   }
 }
 //---------------------------------------------------------------------------
@@ -1795,11 +1864,42 @@ void __fastcall TForm1::ButtonScriptResetClick(TObject *Sender)
     i->second->Value = i->second->Default;
   ScriptOut->Clear();
   RunScript = true;
+  RunLua = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ButtonScriptStopClick(TObject *Sender)
 {
   RunScript = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ButtonSetLuaClick(TObject *Sender)
+{
+  if (!Core) return;
+  if (Core->Lua != MemoLua->Text)
+  {
+    Core->Lua = MemoLua->Text;
+    Modify = true;
+  }
+  for (TRigidChipsVariableMap::iterator i = Core->Variables.begin(); i != Core->Variables.end(); i ++)
+    i->second->Value = i->second->Default;
+  LuaOut->Lines->Text = RCLua->ErrorMessage;
+  RunScript = false;
+  RCLua->ErrorMessage = "";
+  RCLua->ScriptText = Core->Lua;
+  if (RCLua->ErrorMessage != "")
+  {
+    RunLua = false;
+    LuaOut->Lines->Clear();
+    LuaOut->Lines->Add("LoadError");
+    LuaOut->Lines->Add(RCLua->ErrorMessage);
+  }
+  else
+    RunLua = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ButtonStopLuaClick(TObject *Sender)
+{
+  RunLua = false;
 }
 //---------------------------------------------------------------------------
 int CheckPanekitFile(int fp)
@@ -2560,6 +2660,29 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
 void __fastcall TForm1::CheckPanekitTrulyClick(TObject *Sender)
 {
   ListPanekitClick(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::TabBodyResize(TObject *Sender)
+{
+  ListNorth->Width = TabBody->Width - 80;
+  ListSouth->Width = TabBody->Width - 80;
+  ListEast->Width = (TabBody->Width - 5) / 2;
+  ListWest->Width = (TabBody->Width - 5) / 2;
+  ListEast->Left = ListWest->Width + 5;
+
+  ListNorth->Height = (TabBody->Height - 245 - 10) / 3;
+  ListEast->Height = ListNorth->Height;
+  ListWest->Height = ListNorth->Height;
+  ListSouth->Height = ListNorth->Height;
+  ListEast->Top = ListNorth->Height + 5;
+  ListWest->Top = ListNorth->Height + 5;
+  ListSouth->Top = ListNorth->Height + ListEast->Height + 10;
+
+  ComboDirection->Width = (TabBody->Width - 5) / 2;
+  CheckRotate->Left = ComboDirection->Width - CheckRotate->Width;
+  ComboType->Width = (TabBody->Width - 5) / 2;
+  ComboType->Left = ComboDirection->Width + 5;
+  LabelType->Left = ComboType->Left;
 }
 //---------------------------------------------------------------------------
 

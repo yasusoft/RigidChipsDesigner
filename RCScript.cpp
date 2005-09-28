@@ -532,11 +532,17 @@ AnsiString TRCScript::Factor(bool run)
       else if (symup == "_KEY")
       {
         int key = (int)StrToFloatDef(Expression(run), 0);
-        val = Form1->KeysDown[key] ? "1" : "0";
+        val = Form1->Keys[key] ? "1" : "0";
       }
-      else if (symup == "_KEYUP" || symup == "_KEYDOWN")
+      else if (symup == "_KEYUP")
       {
-        val = "0";
+        int key = (int)StrToFloatDef(Expression(run), 0);
+        val = Form1->KeyUp[key] ? "0" : "1";
+      }
+      else if (symup == "_KEYDOWN")
+      {
+        int key = (int)StrToFloatDef(Expression(run), 0);
+        val = Form1->KeyDown[key] ? "1" : "0";
       }
       else if (symup == "_ANALOG" || symup == "_HAT")
       {
@@ -782,10 +788,9 @@ bool TRCScript::Statement(bool run)
       int i = sym.ToIntDef(0);
       if (0 <= i && i < 100)
       {
-        while (Form1->ScriptOut->Items->Count <= i)
-          Form1->ScriptOut->Items->Add("");
-        if (Form1->ScriptOut->Items->Strings[i] != s)
-          Form1->ScriptOut->Items->Strings[i] = s;
+        while (Form1->ScriptOut->Lines->Count <= i)
+          Form1->ScriptOut->Lines->Add("");
+        Form1->ScriptOut->Lines->Strings[i] = s;
       }
     }
     return true;
