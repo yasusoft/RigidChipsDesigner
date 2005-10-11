@@ -75,7 +75,7 @@ public:
         virtual TRigidChipsType GetType(){ return ctNone; }
         virtual AnsiString GetTypeString(){ return "NullPo"; }
         virtual GLuint GetTexture(){ return 0; }
-        void Draw(TRigidChip *caller = NULL);
+        int Draw(TRigidChip *caller = NULL);
         void DrawTranslucent(TRigidChip *caller = NULL);
         virtual void Act();
 
@@ -118,6 +118,7 @@ public:
 
         bool ShowGhost, ShowCowl, ShowBalloon;
         TRigidChip *Select, *Deleted;
+        double CGravity[3], Weight;
 
         virtual TRigidChipsType GetType(){ return ctCore; }
         virtual AnsiString GetTypeString(){ return "Core"; }
@@ -265,6 +266,7 @@ class TRigidChipCowl : public TRigidChip
 {
 protected:
         virtual void DrawMain();
+        virtual void DrawTranslucentMain();
 public:
         virtual TRigidChipsType GetType(){ return ctCowl; }
         virtual AnsiString GetTypeString(){ return "Cowl"; }

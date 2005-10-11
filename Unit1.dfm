@@ -396,8 +396,9 @@ object Form1: TForm1
           Width = 85
           Height = 50
           Anchors = [akLeft, akTop, akRight]
+          Color = 13421823
           Font.Charset = SHIFTJIS_CHARSET
-          Font.Color = clWindowText
+          Font.Color = clBlack
           Font.Height = -12
           Font.Name = #65325#65331' '#12468#12471#12483#12463
           Font.Style = []
@@ -424,8 +425,9 @@ object Form1: TForm1
           Top = 55
           Width = 80
           Height = 50
+          Color = 13434828
           Font.Charset = SHIFTJIS_CHARSET
-          Font.Color = clWindowText
+          Font.Color = clBlack
           Font.Height = -12
           Font.Name = #65325#65331' '#12468#12471#12483#12463
           Font.Style = []
@@ -442,8 +444,9 @@ object Form1: TForm1
           Top = 55
           Width = 80
           Height = 50
+          Color = 13434879
           Font.Charset = SHIFTJIS_CHARSET
-          Font.Color = clWindowText
+          Font.Color = clBlack
           Font.Height = -12
           Font.Name = #65325#65331' '#12468#12471#12483#12463
           Font.Style = []
@@ -461,8 +464,9 @@ object Form1: TForm1
           Width = 85
           Height = 50
           Anchors = [akLeft, akTop, akRight]
+          Color = 16764108
           Font.Charset = SHIFTJIS_CHARSET
-          Font.Color = clWindowText
+          Font.Color = clBlack
           Font.Height = -12
           Font.Name = #65325#65331' '#12468#12471#12483#12463
           Font.Style = []
@@ -981,6 +985,7 @@ object Form1: TForm1
       Caption = '&Tool'
       object KeyRCLoad: TMenuItem
         Caption = 'RigidChips &Load'
+        ShortCut = 16466
         OnClick = KeyRCLoadClick
       end
       object KeyAutoReload: TMenuItem
@@ -1004,6 +1009,10 @@ object Form1: TForm1
         Caption = 'Show &void options'
         Checked = True
         OnClick = KeyShowVoidOptionsClick
+      end
+      object KeyShowCGravity: TMenuItem
+        Caption = 'Show CGravity'
+        OnClick = KeyShowCGravityClick
       end
       object KeyHide: TMenuItem
         Caption = '&Hide'

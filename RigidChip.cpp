@@ -241,7 +241,7 @@ void TRigidChip::DrawMain()
         glTexCoord2f(1, 0); glVertex3f( 1, -1, 0);
   glEnd();
 }
-void TRigidChip::Draw(TRigidChip *caller)
+int TRigidChip::Draw(TRigidChip *caller)
 {
   glMatrixMode(GL_MODELVIEW);
   //glPushMatrix();
@@ -292,14 +292,23 @@ void TRigidChip::Draw(TRigidChip *caller)
   DrawMain();
   glLoadName(0);
 
+  GLfloat m[16];
+  glGetFloatv(GL_MODELVIEW_MATRIX, m);
+  Core->CGravity[0] += GetMass() * m[12];
+  Core->CGravity[1] += GetMass() * m[13];
+  Core->CGravity[2] += GetMass() * m[14];
+  Core->Weight += GetMass();
+
   glDisable(GL_TEXTURE_2D);
   glPopMatrix();
 
+  int cnt = 1;
+  
   for (int i = 0; i < ChipList->Count; i ++)
   {
     TRigidChip *c = (TRigidChip*)ChipList->Items[i];
     if (c != caller)
-      c->Draw(this);
+      cnt += c->Draw(this);
   }
 
   if (caller != Parent && Parent != NULL)
@@ -309,12 +318,14 @@ void TRigidChip::Draw(TRigidChip *caller)
     RotateR();
     TranslateR();
     
-    Parent->Draw(this);
+    cnt += Parent->Draw(this);
   }
 
   // スタックオーバーするので自前で戻す
   glLoadMatrixf(mat_backup);
   //glPopMatrix();
+
+  return cnt;
 }
 void TRigidChip::DrawTranslucent(TRigidChip *caller)
 {
@@ -704,6 +715,19 @@ void TRigidChipWheel::Act()
     double power;
     if (Core->StrToDouble(sp, &power))
     {
+      AnsiString sb = Options->Values["brake"];
+      if (sb != "")
+      {
+        double brake;
+        if (Core->StrToDouble(sb, &brake))
+        {
+          brake = brake / 10 + 1;
+          if (power > 0)
+            power = power / brake + 50;
+          else if (power < 0)
+            power = power / brake - 50;
+        }
+      }
       if (power >  1000) power =  1000;
       if (power < -1000) power = -1000;
       angle = (int)(angle - power / 50) % 360;
@@ -1175,5 +1199,27 @@ void TRigidChipCowl::DrawMain()
     }
   }
   glDisable(GL_TEXTURE_2D);
+}
+//---------------------------------------------------------------------------
+void TRigidChipCowl::DrawTranslucentMain()
+{
+  int opt = Options->Values["option"].ToIntDef(0);
+  if (opt != 1 || !Core->ShowCowl)
+    return;
+
+  // クリック選択用の透明チップ描画
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ZERO, GL_ONE);
+  glLoadName((GLuint)this);
+  //TRigidChip::DrawMain();
+  glBegin(GL_QUADS);
+        glNormal3f(0, 0, 1);
+        glVertex3f(-0.5, -0.5, 0);
+        glVertex3f(-0.5,  0.5, 0);
+        glVertex3f( 0.5,  0.5, 0);
+        glVertex3f( 0.5, -0.5, 0);
+  glEnd();
+  glLoadName(0);
+  glDisable(GL_BLEND);
 }
 //---------------------------------------------------------------------------

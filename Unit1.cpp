@@ -208,6 +208,9 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   try
   {
     ini = new TIniFile(ChangeFileExt(Application->ExeName, ".ini"));
+    int bgc = ini->ReadInteger("RCD", "BGColor", 0);
+    if (bgc)
+      glClearColor(((bgc >> 16) & 0xFF) / 255.0, ((bgc >> 8) & 0xFF) / 255.0, (bgc & 0xFF) / 255.0, 0);
     Width = ini->ReadInteger("RCD", "Width", Width);
     Height = ini->ReadInteger("RCD", "Height", Height);
     Left = ini->ReadInteger("RCD", "Left", (Screen->Width - Width) / 2);
@@ -215,14 +218,15 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
     PanelRight->Width = ini->ReadInteger("RCD", "RightWidth", PanelRight->Width);
     KeySelectAdd->Checked = ini->ReadBool("Option", "SelectAdd", KeySelectAdd->Checked);
     KeyShowVoidOptions->Checked = ini->ReadBool("Option", "ShowVoid", KeyShowVoidOptions->Checked);
+    KeyShowCGravity->Checked = ini->ReadBool("Option", "ShowCGravity", KeyShowCGravity->Checked);
     KeyHideCowl->Checked = ini->ReadBool("Option", "HideCowl", KeyHideCowl->Checked);
     KeyHideGhost->Checked = ini->ReadBool("Option", "HideGhost", KeyHideGhost->Checked);
     KeyHideBalloon->Checked = ini->ReadBool("Option", "HideBalloon", KeyHideBalloon->Checked);
     def_cx = ini->ReadFloat("Option", "CameraX", def_cx);
     def_cy = ini->ReadFloat("Option", "CameraY", def_cy);
     def_cz = ini->ReadFloat("Option", "CameraZ", def_cz);
-    for (int i = 0; i < 12; i ++)
-      def_cmat[i] = ini->ReadFloat("Option", "Camera"+IntToStr(i), def_cmat[i]);
+    def_caH = ini->ReadFloat("Option", "CameraH", def_caH);
+    def_caV = ini->ReadFloat("Option", "CameraV", def_caV);
     RCDSaver->optObfuscate = ini->ReadBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     RCDSaver->optSpaceAfterBlockType = ini->ReadBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
     RCDSaver->optNewLineAfterBlockType = ini->ReadBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
@@ -292,14 +296,15 @@ void __fastcall TForm1::FormClose(TObject *Sender, TCloseAction &Action)
     ini->WriteInteger("RCD", "RightWidth", PanelRight->Width);
     ini->WriteBool("Option", "SelectAdd", KeySelectAdd->Checked);
     ini->WriteBool("Option", "ShowVoid", KeyShowVoidOptions->Checked);
+    ini->WriteBool("Option", "ShowCGravity", KeyShowCGravity->Checked);
     ini->WriteBool("Option", "HideCowl", KeyHideCowl->Checked);
     ini->WriteBool("Option", "HideGhost", KeyHideGhost->Checked);
     ini->WriteBool("Option", "HideBalloon", KeyHideBalloon->Checked);
     ini->WriteFloat("Option", "CameraX", def_cx);
     ini->WriteFloat("Option", "CameraY", def_cy);
     ini->WriteFloat("Option", "CameraZ", def_cz);
-    for (int i = 0; i < 12; i ++)
-      ini->WriteFloat("Option", "Camera"+IntToStr(i), def_cmat[i]);
+    ini->WriteFloat("Option", "CameraH", def_caH);
+    ini->WriteFloat("Option", "CameraV", def_caV);
     ini->WriteBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     ini->WriteBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
     ini->WriteBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
@@ -343,39 +348,31 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
   {
     // 親チップを逆側のリストに追加
     if (chip->Parent)
+    {
+      TListBox *list = NULL;
       switch (chip->Direction)
       {
-        case rdNorth:
-          ListSouth->Items->AddObject("p:" + chip->Parent->GetTypeString(), (TObject*)chip->Parent);
-          break;
-        case rdEast:
-          ListWest->Items->AddObject("p:" + chip->Parent->GetTypeString(), (TObject*)chip->Parent);
-          break;
-        case rdWest:
-          ListEast->Items->AddObject("p:" + chip->Parent->GetTypeString(), (TObject*)chip->Parent);
-          break;
-        case rdSouth:
-          ListNorth->Items->AddObject("p:" + chip->Parent->GetTypeString(), (TObject*)chip->Parent);
-          break;
+        case rdNorth: list = ListSouth; break;
+        case rdEast: list = ListWest; break;
+        case rdWest: list = ListEast; break;
+        case rdSouth: list = ListNorth; break;
       }
+      if (list)
+        list->Items->AddObject("p:" + chip->Parent->GetTypeString() + "(" + chip->Parent->Options->CommaText + ")", (TObject*)chip->Parent);
+    }
 
     for (int i = 0; i < chip->SubChipsCount; i ++)
     {
+      TListBox *list = NULL;
       switch (chip->SubChips[i]->Direction)
       {
-        case rdNorth:
-          ListNorth->Items->AddObject(IntToStr(i) + ":" + chip->SubChips[i]->GetTypeString(), (TObject*)chip->SubChips[i]);
-          break;
-        case rdEast:
-          ListEast->Items->AddObject(IntToStr(i) + ":" + chip->SubChips[i]->GetTypeString(), (TObject*)chip->SubChips[i]);
-          break;
-        case rdWest:
-          ListWest->Items->AddObject(IntToStr(i) + ":" + chip->SubChips[i]->GetTypeString(), (TObject*)chip->SubChips[i]);
-          break;
-        case rdSouth:
-          ListSouth->Items->AddObject(IntToStr(i) + ":" + chip->SubChips[i]->GetTypeString(), (TObject*)chip->SubChips[i]);
-          break;
+        case rdNorth: list = ListNorth; break;
+        case rdEast: list = ListEast; break;
+        case rdWest: list = ListWest; break;
+        case rdSouth: list = ListSouth; break;
       }
+      if (list)
+        list->Items->AddObject(IntToStr(i) + ":" + chip->SubChips[i]->GetTypeString() + "(" + chip->SubChips[i]->Options->CommaText + ")", (TObject*)chip->SubChips[i]);
     }
     OptionsEditor->Strings->Assign(chip->Options);
     if (KeyShowVoidOptions->Checked)
@@ -473,7 +470,8 @@ void __fastcall TForm1::Display()
     glPushMatrix();
     glLoadIdentity();
     glTranslated(-camera_x, -camera_y, -camera_z);
-    glMultMatrixd(camera_matrix);
+    glRotated(camera_angleV, 1, 0, 0);
+    glRotated(camera_angleH, 0, 0, 1);
 
     Origin->Draw();
     Origin->DrawTranslucent();
@@ -534,9 +532,38 @@ void __fastcall TForm1::Display()
   glPushMatrix();
   glLoadIdentity();
   glTranslated(-camera_x, -camera_y, -camera_z);
-  glMultMatrixd(camera_matrix);
+  glRotated(camera_angleV, 1, 0, 0);
+  glRotated(camera_angleH, 0, 0, 1);
 
+  Core->CGravity[0] = Core->CGravity[1] = Core->CGravity[2] = Core->Weight = 0;
   Origin->Draw();
+  Core->CGravity[0] /= Core->Weight;
+  Core->CGravity[1] /= Core->Weight;
+  Core->CGravity[2] /= Core->Weight;
+
+  if (KeyShowCGravity->Checked)
+  { // 重心計算＆描画
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslatef(Core->CGravity[0], Core->CGravity[1], Core->CGravity[2]);
+    glRotated(camera_angleV, 1, 0, 0);
+    glRotated(camera_angleH, 0, 0, 1);
+    const float diffuse[4] = {0, 0, 0, 1};
+    const float ambient[4] = {0.5, 0.5, 0.5, 1};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glBegin(GL_LINES);
+    glVertex3f(-8,  0,  0);
+    glVertex3f( 8,  0,  0);
+    glVertex3f( 0, -8,  0);
+    glVertex3f( 0,  8,  0);
+    glVertex3f( 0,  0, -8);
+    glVertex3f( 0,  0,  8);
+    glEnd();
+    glPopMatrix();
+  }
+  
   Origin->DrawTranslucent();
 
   glPopMatrix();
@@ -560,11 +587,8 @@ void __fastcall TForm1::PaintPanelMouseDown(TObject *Sender, TMouseButton Button
   if (Button == mbRight)
   {
     mouse_right = true;
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadMatrixd(camera_matrix);
-    glGetDoublev(GL_MODELVIEW_MATRIX, mouse_cm);
-    glPopMatrix();
+    mouse_caH = camera_angleH;
+    mouse_caV = camera_angleV;
   }
   else if (mouse_right && Button == mbLeft)
   {
@@ -579,8 +603,8 @@ void __fastcall TForm1::PaintPanelMouseDown(TObject *Sender, TMouseButton Button
     camera_x = def_cx;
     camera_y = def_cy;
     camera_z = def_cz;
-    for (int i = 0; i < 16; i ++)
-      camera_matrix[i] = def_cmat[i];
+    camera_angleH = def_caH;
+    camera_angleV = def_caV;
     Display();
   }
   else if (Button == mbLeft)
@@ -608,14 +632,8 @@ void __fastcall TForm1::PaintPanelMouseMove(TObject *Sender,
   }
   else if (mouse_right)
   {
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    glRotated(X - mouse_x, 0, 1, 0);
-    glRotated(Y - mouse_y, 1, 0, 0);
-    glMultMatrixd(mouse_cm);
-    glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
-    glPopMatrix();
+    camera_angleH = mouse_caH + (X - mouse_x);
+    camera_angleV = mouse_caV + (Y - mouse_y);
     Display();
   }
 }
@@ -629,6 +647,10 @@ void __fastcall TForm1::FormMouseWheel(TObject *Sender, TShiftState Shift,
     camera_z += camera_z > 0 ? camera_z * 0.1 + 1 : 1;
   if (WheelDelta > 0 && camera_z > -25)
     camera_z -= camera_z > 0 ? camera_z * 0.1 + 1 : 1;
+  while (camera_angleV < 0) camera_angleV += 360;
+  while (camera_angleV > 360) camera_angleV -= 360;
+  while (camera_angleH < 0) camera_angleH += 360;
+  while (camera_angleH > 360) camera_angleH -= 360;
   Display();
 }
 //---------------------------------------------------------------------------
@@ -766,43 +788,23 @@ void __fastcall TForm1::EditKeyTestKeyDown(TObject *Sender, WORD &Key,
     case 'E': case 'e': Keys[16] = f; break;
 
     case 'K': // カメラが上方向へ回転
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-      glRotated(15, 1, 0, 0);
-      glMultMatrixd(camera_matrix);
-      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
-      glPopMatrix();
+      camera_angleV += 15;
+      while (camera_angleV > 360) camera_angleV -= 360;
       Display();
       break;
     case 'L': // カメラが下方向へ回転
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-      glRotated(-15, 1, 0, 0);
-      glMultMatrixd(camera_matrix);
-      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
-      glPopMatrix();
+      camera_angleV -= 15;
+      while (camera_angleV < 0) camera_angleV += 360;
       Display();
       break;
-    case 0xBC/*KEY_OEM_COMMA*/: // カメラが左方向へ回転
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-      glRotated(15, 0, 1, 0);
-      glMultMatrixd(camera_matrix);
-      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
-      glPopMatrix();
+    case 0xBC: // KEY_OEM_COMMA カメラが左方向へ回転
+      camera_angleH += 15;
+      while (camera_angleH > 360) camera_angleH -= 360;
       Display();
       break;
-    case 0xBE/*KEY_OEM_PERIOD*/: // カメラが右方向へ回転
-      glMatrixMode(GL_MODELVIEW);
-      glPushMatrix();
-      glLoadIdentity();
-      glRotated(-15, 0, 1, 0);
-      glMultMatrixd(camera_matrix);
-      glGetDoublev(GL_MODELVIEW_MATRIX, camera_matrix);
-      glPopMatrix();
+    case 0xBE: // KEY_OEM_PERIOD カメラが右方向へ回転
+      camera_angleH -= 15;
+      while (camera_angleH < 0) camera_angleH += 360;
       Display();
       break;
     case 'I': case 'i': // 拡大
@@ -1321,13 +1323,19 @@ void __fastcall TForm1::KeyShowVoidOptionsClick(TObject *Sender)
   SelectionChange(Core->Select);
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::KeyShowCGravityClick(TObject *Sender)
+{
+  KeyShowCGravity->Checked = !KeyShowCGravity->Checked;
+  Display();
+}
+//---------------------------------------------------------------------------
 void __fastcall TForm1::KeyDefViewThisClick(TObject *Sender)
 {
   def_cx = camera_x;
   def_cy = camera_y;
   def_cz = camera_z;
-  for (int i = 0; i < 16; i ++)
-    def_cmat[i] = camera_matrix[i];
+  def_caH = camera_angleH;
+  def_caV = camera_angleV;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyDefViewInitilizeClick(TObject *Sender)
@@ -1335,11 +1343,8 @@ void __fastcall TForm1::KeyDefViewInitilizeClick(TObject *Sender)
   def_cx = 0;
   def_cy = 0;
   def_cz = 0;
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glLoadIdentity();
-  glGetDoublev(GL_MODELVIEW_MATRIX, def_cmat);
-  glPopMatrix();
+  def_caH = 0;
+  def_caV = 0;
   PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
 }
 //---------------------------------------------------------------------------

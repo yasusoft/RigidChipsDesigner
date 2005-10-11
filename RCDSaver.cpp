@@ -26,7 +26,7 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
   // settings begin
   AnsiString afteropt;
   if (optNewLineAfterOptions)
-    afteropt = "\n";
+    afteropt = "\r\n";
   else if (optSpaceAfterOptions)
     afteropt = " ";
 
@@ -44,7 +44,7 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
     tab = "\t";
 
   AnsiString sp = " ";
-  AnsiString br = "\n";
+  AnsiString br = "\r\n";
 
   AnsiString dir[] = {"", "N:", "E:", "S:", "W:"};
   if (optObfuscate)
@@ -101,13 +101,13 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
   {
     AnsiString aftertype;
     if (optNewLineAfterBlockType)
-      aftertype = "\n";
+      aftertype = "\r\n";
     else if (optSpaceAfterBlockType)
       aftertype = " ";
 
     AnsiString afteropt;
     if (optNewLineAfterOptions)
-      afteropt = "\n";
+      afteropt = "\r\n";
     else if (optSpaceAfterOptions)
       afteropt = " ";
 

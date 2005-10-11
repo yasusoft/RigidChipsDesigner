@@ -204,6 +204,7 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyHideCowl;
         TMenuItem *KeyHideGhost;
         TMenuItem *KeyHideBalloon;
+        TMenuItem *KeyShowCGravity;
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall PaintPanelPaint(TObject *Sender);
         void __fastcall PaintPanelMouseDown(TObject *Sender, TMouseButton Button,
@@ -287,6 +288,7 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall ButtonStopLuaClick(TObject *Sender);
         void __fastcall TabBodyResize(TObject *Sender);
         void __fastcall HideClick(TObject *Sender);
+        void __fastcall KeyShowCGravityClick(TObject *Sender);
 private:	// ユーザー宣言
         HGLRC ghRC; // レンダリングコンテキスト
         HDC   ghDC; // デバイスコンテキスト
@@ -299,13 +301,14 @@ private:	// ユーザー宣言
         bool PickUp;
         int PickUpX, PickUpY;
         double camera_x, camera_y, camera_z; // カメラ座標
-        double camera_matrix[16]; // カメラ行列
-        double def_cx, def_cy, def_cz, def_cmat[16];
+        double camera_angleH, camera_angleV;
+        double def_cx, def_cy, def_cz;
+        double def_caH, def_caV;
 
         bool mouse_left, mouse_right; // マウス投下中？
         int mouse_x, mouse_y; // 投下開始マウス位置
         double mouse_cx, mouse_cy, mouse_cz; // 投下時カメラ座標
-        double mouse_cm[16]; // 投下時カメラ行列
+        double mouse_caH, mouse_caV;
 
         TRCDLoader *RCDLoader;
         TRCDSaver *RCDSaver;

@@ -201,6 +201,8 @@ TRigidChipCore* TRCDLoader::Load(AnsiString filename)
           s += AnsiString(c);
       }
 
+      s = StringReplace(s, "\r", "", TReplaceFlags() << rfReplaceAll);
+      s = StringReplace(s, "\n", "\r\n", TReplaceFlags() << rfReplaceAll);
       core->Script->ScriptText = s;
     }
     else if (key == "lua")
@@ -221,7 +223,11 @@ TRigidChipCore* TRCDLoader::Load(AnsiString filename)
       core->Lua = core->Lua.TrimRight();
       int p = core->Lua.LastDelimiter("}");
       if (p != 0)
+      {
         core->Lua = core->Lua.SubString(1, p-1);
+        core->Lua = StringReplace(core->Lua, "\r", "", TReplaceFlags() << rfReplaceAll);
+        core->Lua = StringReplace(core->Lua, "\n", "\r\n", TReplaceFlags() << rfReplaceAll);
+      }
       else
       {
         ErrorMessage = "close bracket of lua was not found";
