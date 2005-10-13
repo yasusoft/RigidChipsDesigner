@@ -5,10 +5,10 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="RCD.exe"/>
     <OBJFILES value="RCD.obj Unit1.obj RigidChip.obj RCDLoader.obj RCDSaver.obj RCScript.obj 
-      RCLua.obj"/>
+      RCLua.obj UnitOptionSave.obj"/>
     <RESFILES value="RCD.res textures.res"/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) Unit1.dfm"/>
+    <RESDEPEN value="$(RESFILES) Unit1.dfm UnitOptionSave.dfm"/>
     <LIBFILES value="Lua.lib"/>
     <LIBRARIES value="rtl.lib vcl.lib"/>
     <SPARELIBS value="vcl.lib rtl.lib"/>
@@ -58,6 +58,7 @@
       <FILE FILENAME="RCScript.cpp" FORMNAME="" UNITNAME="RCScript" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="RCLua.cpp" FORMNAME="" UNITNAME="RCLua" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Lua.lib" FORMNAME="" UNITNAME="Lua.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="UnitOptionSave.cpp" FORMNAME="FormOptionSave" UNITNAME="UnitOptionSave" CONTAINERID="C/C++ コンパイラ" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

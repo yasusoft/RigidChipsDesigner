@@ -55,7 +55,7 @@ object Form1: TForm1
     DesignSize = (
       177
       480)
-    object PageControl1: TPageControl
+    object PageControlRight: TPageControl
       Left = 2
       Top = 0
       Width = 173
@@ -65,7 +65,7 @@ object Form1: TForm1
       MultiLine = True
       TabIndex = 2
       TabOrder = 0
-      OnChange = PageControl1Change
+      OnChange = PageControlRightChange
       object TabVal: TTabSheet
         Caption = 'Val'
         object ListVariables: TListBox
@@ -390,6 +390,28 @@ object Form1: TForm1
           Caption = 'Chip&Type'
           FocusControl = ComboType
         end
+        object TreeViewBody: TTreeView
+          Left = 20
+          Top = 0
+          Width = 145
+          Height = 160
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Font.Charset = SHIFTJIS_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -12
+          Font.Name = #65325#65331' '#12468#12471#12483#12463
+          Font.Style = []
+          HideSelection = False
+          Indent = 14
+          ParentFont = False
+          PopupMenu = PopupMenu1
+          ReadOnly = True
+          ShowRoot = False
+          TabOrder = 7
+          ToolTips = False
+          Visible = False
+          OnChange = TreeViewBodyChange
+        end
         object ListNorth: TListBox
           Left = 40
           Top = 0
@@ -493,7 +515,7 @@ object Form1: TForm1
           ImeMode = imDisable
           ItemHeight = 12
           ParentFont = False
-          TabOrder = 9
+          TabOrder = 11
           OnChange = ComboTypeChange
           Items.Strings = (
             'Chip'
@@ -524,43 +546,13 @@ object Form1: TForm1
           ImeMode = imDisable
           ItemHeight = 12
           ParentFont = False
-          TabOrder = 7
+          TabOrder = 9
           OnChange = ComboDirectionChange
           Items.Strings = (
             'North'
             'East'
             'South'
             'West')
-        end
-        object OptionsEditor: TValueListEditor
-          Left = 0
-          Top = 206
-          Width = 165
-          Height = 200
-          Align = alBottom
-          DefaultColWidth = 55
-          Font.Charset = SHIFTJIS_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -12
-          Font.Name = #65325#65331' '#12468#12471#12483#12463
-          Font.Style = []
-          KeyOptions = [keyEdit, keyAdd, keyDelete, keyUnique]
-          Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goAlwaysShowEditor, goThumbTracking]
-          ParentFont = False
-          PopupMenu = PopupMenuOptions
-          ScrollBars = ssVertical
-          Strings.Strings = (
-            '')
-          TabOrder = 10
-          TitleCaptions.Strings = (
-            'Key'
-            'Value')
-          OnEditButtonClick = OptionsEditorEditButtonClick
-          OnSelectCell = OptionsEditorSelectCell
-          OnStringsChange = OptionsEditorStringsChange
-          ColWidths = (
-            55
-            104)
         end
         object CheckRotate: TCheckBox
           Left = 50
@@ -571,7 +563,7 @@ object Form1: TForm1
           Caption = 'R'
           Checked = True
           State = cbChecked
-          TabOrder = 8
+          TabOrder = 10
         end
         object ButtonPlus: TButton
           Left = 5
@@ -590,6 +582,101 @@ object Form1: TForm1
           Caption = #65293
           TabOrder = 1
           OnClick = ButtonMinusClick
+        end
+        object PageControlBody: TPageControl
+          Left = 0
+          Top = 205
+          Width = 165
+          Height = 201
+          ActivePage = TabOptions
+          Align = alBottom
+          MultiLine = True
+          TabIndex = 0
+          TabOrder = 12
+          TabPosition = tpRight
+          object TabOptions: TTabSheet
+            Caption = 'Options'
+            object OptionsEditor: TValueListEditor
+              Left = 0
+              Top = 0
+              Width = 139
+              Height = 193
+              Align = alClient
+              DefaultColWidth = 55
+              Font.Charset = SHIFTJIS_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -12
+              Font.Name = #65325#65331' '#12468#12471#12483#12463
+              Font.Style = []
+              KeyOptions = [keyEdit, keyAdd, keyDelete, keyUnique]
+              Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goAlwaysShowEditor, goThumbTracking]
+              ParentFont = False
+              PopupMenu = PopupMenuOptions
+              ScrollBars = ssVertical
+              Strings.Strings = (
+                '')
+              TabOrder = 0
+              TitleCaptions.Strings = (
+                'Key'
+                'Value')
+              OnEditButtonClick = OptionsEditorEditButtonClick
+              OnSelectCell = OptionsEditorSelectCell
+              OnStringsChange = OptionsEditorStringsChange
+              ColWidths = (
+                55
+                78)
+            end
+          end
+          object TabMemoChip: TTabSheet
+            Caption = 'ChipMemo'
+            ImageIndex = 1
+            object MemoChip: TMemo
+              Left = 0
+              Top = 0
+              Width = 139
+              Height = 193
+              Align = alClient
+              Font.Charset = SHIFTJIS_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -12
+              Font.Name = #65325#65331' '#12468#12471#12483#12463
+              Font.Style = []
+              ParentFont = False
+              ScrollBars = ssBoth
+              TabOrder = 0
+              OnChange = MemoChipChange
+            end
+          end
+          object TabMemoModel: TTabSheet
+            Caption = 'ModelMemo'
+            ImageIndex = 2
+            object MemoModel: TMemo
+              Left = 0
+              Top = 0
+              Width = 139
+              Height = 193
+              Align = alClient
+              Font.Charset = SHIFTJIS_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -12
+              Font.Name = #65325#65331' '#12468#12471#12483#12463
+              Font.Style = []
+              ParentFont = False
+              ScrollBars = ssBoth
+              TabOrder = 0
+              OnChange = MemoModelChange
+            end
+          end
+        end
+        object ButtonSwitch: TButton
+          Left = 0
+          Top = 140
+          Width = 20
+          Height = 20
+          Anchors = [akLeft, akBottom]
+          Caption = '*'
+          TabOrder = 8
+          OnClick = ButtonSwitchClick
         end
       end
       object TabScript: TTabSheet
@@ -855,6 +942,7 @@ object Form1: TForm1
       Width = 110
       Height = 20
       Anchors = [akLeft, akRight, akBottom]
+      AutoSelect = False
       ImeMode = imDisable
       ReadOnly = True
       TabOrder = 1
@@ -1000,20 +1088,6 @@ object Form1: TForm1
     end
     object KeyOption: TMenuItem
       Caption = '&Option'
-      object KeySelectAdd: TMenuItem
-        Caption = 'Select &AddChip'
-        Checked = True
-        OnClick = KeySelectAddClick
-      end
-      object KeyShowVoidOptions: TMenuItem
-        Caption = 'Show &void options'
-        Checked = True
-        OnClick = KeyShowVoidOptionsClick
-      end
-      object KeyShowCGravity: TMenuItem
-        Caption = 'Show CGravity'
-        OnClick = KeyShowCGravityClick
-      end
       object KeyHide: TMenuItem
         Caption = '&Hide'
         object KeyHideCowl: TMenuItem
@@ -1030,37 +1104,23 @@ object Form1: TForm1
           OnClick = HideClick
         end
       end
+      object KeySelectAdd: TMenuItem
+        Caption = 'Select &AddChip'
+        Checked = True
+        OnClick = KeySelectAddClick
+      end
+      object KeyShowVoidOptions: TMenuItem
+        Caption = 'Show &void options'
+        Checked = True
+        OnClick = KeyShowVoidOptionsClick
+      end
+      object KeyShowCGravity: TMenuItem
+        Caption = 'Show CGravity'
+        OnClick = KeyShowCGravityClick
+      end
       object KeyOptSave: TMenuItem
-        Caption = '&Save'
+        Caption = '&Save form...'
         OnClick = KeyOptSaveClick
-        object KeySaveObfuscate: TMenuItem
-          Caption = 'Obfuscate'
-          OnClick = KeySaveOptionClick
-        end
-        object KeySpaceBlock: TMenuItem
-          Caption = 'Space after BlockType'
-          OnClick = KeySaveOptionClick
-        end
-        object KeyNLBlock: TMenuItem
-          Caption = 'New line after BlockType'
-          OnClick = KeySaveOptionClick
-        end
-        object KeySpaceOpt: TMenuItem
-          Caption = 'Space after Options'
-          OnClick = KeySaveOptionClick
-        end
-        object KeyNLOpt: TMenuItem
-          Caption = 'New line after Options'
-          OnClick = KeySaveOptionClick
-        end
-        object KeySpaceComma: TMenuItem
-          Caption = 'Space after comma'
-          OnClick = KeySaveOptionClick
-        end
-        object KeyNoSubNoNL: TMenuItem
-          Caption = 'No sub chip, no new line'
-          OnClick = KeySaveOptionClick
-        end
       end
       object KeyDefaultView: TMenuItem
         Caption = 'Default &View'

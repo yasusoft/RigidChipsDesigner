@@ -65,12 +65,6 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyAutoReload;
         TMenuItem *KeyOption;
         TMenuItem *KeyOptSave;
-        TMenuItem *KeySpaceBlock;
-        TMenuItem *KeyNLBlock;
-        TMenuItem *KeySpaceOpt;
-        TMenuItem *KeyNLOpt;
-        TMenuItem *KeySpaceComma;
-        TMenuItem *KeyNoSubNoNL;
         TPopupMenu *PopupMenu1;
         TMenuItem *KeyPaste2;
         TMenuItem *KeyOrigin;
@@ -117,7 +111,6 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyFileBar2;
         TMenuItem *KeyImport;
         TMenuItem *KeySelectAdd;
-        TMenuItem *KeySaveObfuscate;
         TMenuItem *KeyShowVoidOptions;
         TMenuItem *KeyOptionUp;
         TMenuItem *KeyOptionDown;
@@ -130,7 +123,7 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyDeleteOne2;
         TMenuItem *KeyDeleteOne;
         TPanel *PanelRight;
-        TPageControl *PageControl1;
+        TPageControl *PageControlRight;
         TTabSheet *TabVal;
         TListBox *ListVariables;
         TPanel *PanelVariable;
@@ -170,7 +163,6 @@ __published:	// IDE 管理のコンポーネント
         TListBox *ListSouth;
         TComboBox *ComboType;
         TComboBox *ComboDirection;
-        TValueListEditor *OptionsEditor;
         TCheckBox *CheckRotate;
         TButton *ButtonPlus;
         TButton *ButtonMinus;
@@ -205,6 +197,15 @@ __published:	// IDE 管理のコンポーネント
         TMenuItem *KeyHideGhost;
         TMenuItem *KeyHideBalloon;
         TMenuItem *KeyShowCGravity;
+        TPageControl *PageControlBody;
+        TTabSheet *TabOptions;
+        TValueListEditor *OptionsEditor;
+        TTabSheet *TabMemoChip;
+        TTabSheet *TabMemoModel;
+        TMemo *MemoChip;
+        TMemo *MemoModel;
+        TTreeView *TreeViewBody;
+        TButton *ButtonSwitch;
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall PaintPanelPaint(TObject *Sender);
         void __fastcall PaintPanelMouseDown(TObject *Sender, TMouseButton Button,
@@ -236,7 +237,6 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall KeyRCLoadClick(TObject *Sender);
         void __fastcall KeyAutoReloadClick(TObject *Sender);
         void __fastcall ComboDirectionChange(TObject *Sender);
-        void __fastcall KeySaveOptionClick(TObject *Sender);
         void __fastcall KeyOptSaveClick(TObject *Sender);
         void __fastcall KeyCutClick(TObject *Sender);
         void __fastcall KeyEditClick(TObject *Sender);
@@ -253,7 +253,7 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall ListVariablesClick(TObject *Sender);
         void __fastcall ButtonVarDelClick(TObject *Sender);
         void __fastcall ButtonVarOkClick(TObject *Sender);
-        void __fastcall PageControl1Change(TObject *Sender);
+        void __fastcall PageControlRightChange(TObject *Sender);
         void __fastcall ButtonVarColorClick(TObject *Sender);
         void __fastcall ComboKeyNoChange(TObject *Sender);
         void __fastcall ListKeyVarClick(TObject *Sender);
@@ -289,6 +289,11 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall TabBodyResize(TObject *Sender);
         void __fastcall HideClick(TObject *Sender);
         void __fastcall KeyShowCGravityClick(TObject *Sender);
+        void __fastcall MemoChipChange(TObject *Sender);
+        void __fastcall MemoModelChange(TObject *Sender);
+        void __fastcall ButtonSwitchClick(TObject *Sender);
+        void __fastcall TreeViewBodyChange(TObject *Sender,
+          TTreeNode *Node);
 private:	// ユーザー宣言
         HGLRC ghRC; // レンダリングコンテキスト
         HDC   ghDC; // デバイスコンテキスト
@@ -309,9 +314,6 @@ private:	// ユーザー宣言
         int mouse_x, mouse_y; // 投下開始マウス位置
         double mouse_cx, mouse_cy, mouse_cz; // 投下時カメラ座標
         double mouse_caH, mouse_caV;
-
-        TRCDLoader *RCDLoader;
-        TRCDSaver *RCDSaver;
 
         bool RunScript, RunLua;
         TRCLua *RCLua;
@@ -350,9 +352,14 @@ protected:
 #pragma warn .8027
 public:		// ユーザー宣言
         TPaintPanel *PaintPanel; // 表示用ウィンドウ
+
         bool Keys[17], KeysOld[17], KeyDown[17], KeyUp[17];
         int MouseX, MouseY;
         bool MouseLeft, MouseMiddle, MouseRight;
+
+        TRCDLoader *RCDLoader;
+        TRCDSaver *RCDSaver;
+
         void __fastcall Display();
         __fastcall TForm1(TComponent* Owner);
 };

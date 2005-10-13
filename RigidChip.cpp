@@ -446,7 +446,7 @@ TRigidChipCore::TRigidChipCore()
   Select = NULL;
   Deleted = NULL;
 
-  Comment = "[RCD]";
+  FlagRCD = true;
   Script = new TRCScript(this);
 }
 //---------------------------------------------------------------------------

@@ -81,6 +81,7 @@ public:
 
         __property TRigidChipCore *Core = {read=FCore, write=SetCore};
         TRigidChip *Parent;
+        AnsiString MemoChip;
 
         virtual float GetMass(){ return 25.20; }
 
@@ -110,7 +111,8 @@ public:
         void AddKey(AnsiString keyn, TRigidChipsKey *key);
         void ActKey(AnsiString keyn);
 
-        AnsiString Comment;
+        bool FlagRCD;
+        AnsiString MemoModel;
         AnsiString Lua;
         TRCScript *Script;
 

@@ -100,9 +100,15 @@ TRigidChipCore* TRCDLoader::Load(AnsiString filename)
   TRigidChipCore *core = new TRigidChipCore;
 
   AnsiString cmt;
-  core->Comment = "";
+  core->MemoModel = "";
   while (skipsp(fp), (cmt = readcomment(fp)) != "")
-    core->Comment += cmt;
+    core->MemoModel += cmt;
+  if (core->MemoModel.SubString(1, 6) == "[RCD] ")
+    core->MemoModel = core->MemoModel.SubString(7, core->MemoModel.Length());
+  else if (core->MemoModel.SubString(1, 5) == "[RCD]")
+    core->MemoModel = core->MemoModel.SubString(6, core->MemoModel.Length());
+  else
+    core->FlagRCD = false;
 
   AnsiString key;
   while ((key = readkey(fp).LowerCase()) != "")
@@ -349,7 +355,12 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
     ErrorMessage = "open bracket must be after body";
     return NULL;
   }
-  while (skipsp(fp), readcomment(fp) != "");
+
+  AnsiString memo, cmt;
+  while (skipsp(fp), (cmt = readcomment(fp)) != "")
+    memo += cmt;
+  core->MemoChip = memo;
+  memo = "";
 
   AnsiString key = readkey(fp).LowerCase();
   if (key != "core")
@@ -374,7 +385,9 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
     ErrorMessage = "open bracket must be after core()";
     return NULL;
   }
-  while (skipsp(fp), readcomment(fp) != "");
+
+  while (skipsp(fp), (cmt = readcomment(fp)) != "")
+    memo += cmt;
 
   TStack *stack = new TStack;
   TRigidChip *parent = core;
@@ -385,6 +398,7 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
       if (c == '}')
       {
         while (skipsp(fp), readcomment(fp) != "");
+        memo = "";
         if (stack->Count() == 0)
           break;
         parent = (TRigidChip*)stack->Pop();
@@ -475,7 +489,11 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
       stack->Push(parent);
       parent = chip;
 
-      while (skipsp(fp), readcomment(fp) != "");
+      while (skipsp(fp), (cmt = readcomment(fp)) != "")
+        memo += cmt;
+
+      chip->MemoChip = memo;
+      memo = "";
 
       FileRead(fp, &c, 1);
       if (c != '{')
@@ -483,7 +501,8 @@ TRigidChip* TRCDLoader::procbody(int fp, TRigidChip* core)
         ErrorMessage = "open bracket must be after chip definition";
         return NULL;
       }
-      while (skipsp(fp), readcomment(fp) != "");
+      while (skipsp(fp), (cmt = readcomment(fp)) != "")
+        memo += cmt;
     }
   }
   __finally

@@ -495,11 +495,11 @@ AnsiString TRCScript::Factor(bool run)
       {
         val = "30";
       }
-      else if (symup == "_TICK" || symup == "_TICKS")
+      else if (symup == "_TICKS")
       {
         val = FloatToStr(Tick);
       }
-      else if (symup == "_SETTICK" || symup == "_SETTICKS")
+      else if (symup == "_SETTICKS")
       {
         if (!Expect(")", false, true))
         {

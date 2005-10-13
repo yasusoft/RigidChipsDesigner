@@ -161,9 +161,7 @@ void TRCLua::SetScript(AnsiString s)
   LUAREG(_DT);
   LUAREG(_FPS);
   LUAREG(_TICKS);
-  lua_register(L, "_TICK", lua_TICKS);
   LUAREG(_SETTICKS);
-  lua_register(L, "_SETTICK", lua_SETTICKS);
   LUANOP(_CHIPS);
   LUANOP(_WEIGHT);
   LUAREG(_WIDTH);

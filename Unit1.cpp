@@ -12,6 +12,7 @@
 #include <Clipbrd.hpp>
 #include <stack>
 #include "RCLua.h"
+#include "UnitOptionSave.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -62,8 +63,6 @@ void __fastcall TForm1::WMDropFiles(TWMDropFiles &Msg)
     FileName = filename;
     Modify = false;
     PaintPanelMouseDown(NULL, mbMiddle, TShiftState(), 0, 0);
-    PageControl1->ActivePage = TabVal;
-    PageControl1->ActivePage = TabBody;
     ScriptOut->Clear();
     LuaOut->Clear();
     RunScript = false;
@@ -80,8 +79,8 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   Origin = Core = NULL;
   FileName = "";
   Modify = false;
-  PageControl1->ActivePage = TabVal;
-  PageControl1->ActivePage = TabBody;
+  PageControlRight->ActivePage = TabVal;
+  PageControlRight->ActivePage = TabBody;
 
   RCDLoader = new TRCDLoader;
   RCDSaver = new TRCDSaver;
@@ -227,13 +226,13 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
     def_cz = ini->ReadFloat("Option", "CameraZ", def_cz);
     def_caH = ini->ReadFloat("Option", "CameraH", def_caH);
     def_caV = ini->ReadFloat("Option", "CameraV", def_caV);
-    RCDSaver->optObfuscate = ini->ReadBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     RCDSaver->optSpaceAfterBlockType = ini->ReadBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
     RCDSaver->optNewLineAfterBlockType = ini->ReadBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
     RCDSaver->optSpaceAfterOptions = ini->ReadBool("OptionSave", "SpaceOption", RCDSaver->optSpaceAfterOptions);
     RCDSaver->optNewLineAfterOptions = ini->ReadBool("OptionSave", "NewLineOption", RCDSaver->optNewLineAfterOptions);
     RCDSaver->optSpaceAfterComma = ini->ReadBool("OptionSave", "SpaceComma", RCDSaver->optSpaceAfterComma);
     RCDSaver->optNoSubNoNewLine = ini->ReadBool("OptionSave", "NoSubNoNewLine", RCDSaver->optNoSubNoNewLine);
+    RCDSaver->optTabSpaces = ini->ReadInteger("OptionSave", "TabSpaces", RCDSaver->optTabSpaces);
     delete ini;
   }
   catch (...)
@@ -254,8 +253,6 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
       FileName = ParamStr(1);
       Modify = false;
       PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
-      PageControl1->ActivePage = TabVal;
-      PageControl1->ActivePage = TabBody;
       ScriptOut->Clear();
       LuaOut->Clear();
       RunScript = false;
@@ -305,13 +302,13 @@ void __fastcall TForm1::FormClose(TObject *Sender, TCloseAction &Action)
     ini->WriteFloat("Option", "CameraZ", def_cz);
     ini->WriteFloat("Option", "CameraH", def_caH);
     ini->WriteFloat("Option", "CameraV", def_caV);
-    ini->WriteBool("OptionSave", "Obfuscate", RCDSaver->optObfuscate);
     ini->WriteBool("OptionSave", "SpaceBlock", RCDSaver->optSpaceAfterBlockType);
     ini->WriteBool("OptionSave", "NewLineBlock", RCDSaver->optNewLineAfterBlockType);
     ini->WriteBool("OptionSave", "SpaceOption", RCDSaver->optSpaceAfterOptions);
     ini->WriteBool("OptionSave", "NewLineOption", RCDSaver->optNewLineAfterOptions);
     ini->WriteBool("OptionSave", "SpaceComma", RCDSaver->optSpaceAfterComma);
     ini->WriteBool("OptionSave", "NoSubNoNewLine", RCDSaver->optNoSubNoNewLine);
+    ini->WriteInteger("OptionSave", "TabSpaces", RCDSaver->optTabSpaces);
     delete ini;
   }
   catch (...)
@@ -333,6 +330,20 @@ void __fastcall TForm1::PaintPanelPaint(TObject *Sender)
   //Yield();
 }
 //---------------------------------------------------------------------------
+TTreeNode* TreeViewBodyAdd(TTreeNode *node, TRigidChip *chip, TRigidChip *select)
+{
+  TTreeNode *sel = NULL;
+  AnsiString dir[] = {"", "N:", "E:", "S:", "W:"};
+  node = Form1->TreeViewBody->Items->AddChildObject(node, dir[chip->Direction] + chip->GetTypeString() + "(" + chip->Options->CommaText + ")", chip);
+  for (int i = 0; i < chip->SubChipsCount; i ++)
+  {
+    TTreeNode *s = TreeViewBodyAdd(node, chip->SubChips[i], select);
+    if (s) sel = s;
+  }
+  if (chip == select)
+    return node;
+  return sel;
+}
 void __fastcall TForm1::SelectionChange(TRigidChip *chip)
 {
   ListNorth->Items->Clear();
@@ -340,6 +351,26 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
   ListWest->Items->Clear();
   ListSouth->Items->Clear();
   Direction = rdCore;
+
+  TreeViewBody->Items->BeginUpdate();
+  TreeViewBody->Items->Clear();
+  TTreeNode *node = TreeViewBodyAdd(NULL, Core, chip);
+  //TreeViewBody->FullExpand();
+  TreeViewBody->OnChange = NULL;
+  TreeViewBody->Selected = node;
+  //TreeViewBody->TopItem = node;
+  if (node)
+  {
+    node->Expand(false);
+    node->MakeVisible();
+  }
+  else
+  {
+    TreeViewBody->Items->Item[0]->Expand(true);
+    TreeViewBody->Items->Item[0]->MakeVisible();
+  }
+  TreeViewBody->OnChange = TreeViewBodyChange;
+  TreeViewBody->Items->EndUpdate();
 
   if (!Core) return;
   Core->Select = NULL;
@@ -412,6 +443,7 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
     }
     ComboDirection->ItemIndex = chip->Direction - 1;
     ComboType->ItemIndex = ComboType->Items->IndexOf(chip->GetTypeString());
+    MemoChip->Text = chip->MemoChip;
 
     Core->Select = chip;
     bool tmp = true;
@@ -422,6 +454,7 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
     ComboDirection->ItemIndex = -1;
     ComboType->ItemIndex = -1;
     OptionsEditor->Strings->Clear();
+    MemoChip->Clear();
   }
 
   ButtonParent->Enabled = Core->Select && Core->Select->Parent;
@@ -430,6 +463,7 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
   ComboDirection->Enabled = Core->Select && Core->Select != Core;
   ComboType->Enabled = Core->Select && Core->Select != Core;
   OptionsEditor->Enabled = Core->Select;
+  MemoChip->Enabled = Core->Select;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::Display()
@@ -598,6 +632,12 @@ void __fastcall TForm1::PaintPanelMouseDown(TObject *Sender, TMouseButton Button
   }
   else if (Button == mbMiddle)
   {
+    if (PageControlRight->ActivePage != TabPanekit)
+    {
+      PageControlRight->ActivePage = TabVal;
+      PageControlRight->ActivePage = TabBody;
+      PageControlRightChange(Sender);
+    }
     if (Core)
       SelectionChange(NULL);
     camera_x = def_cx;
@@ -746,6 +786,8 @@ void __fastcall TForm1::CheckAnimeClick(TObject *Sender)
 void __fastcall TForm1::EditKeyTestKeyDown(TObject *Sender, WORD &Key,
       TShiftState Shift)
 {
+  EditKeyTest->SelLength = 0;
+  
   if (Shift.Contains(ssCtrl))
   {
     switch (Key)
@@ -869,7 +911,7 @@ void __fastcall TForm1::TimerReloadTimer(TObject *Sender)
     TRigidChipCore *coreback = Core;
     Origin = Core = corenew;
     Display();
-    PageControl1Change(Sender);
+    PageControlRightChange(Sender);
 
     if (coreback)
       delete coreback;
@@ -1034,6 +1076,11 @@ void __fastcall TForm1::OptionsEditorSelectCell(TObject *Sender, int ACol,
         OptionsEditor->ItemProps[ARow-1]->PickList->Text = "0\n1";
       }
     }
+    else if (key == "spring" || key == "damper")
+    {
+      OptionsEditor->ItemProps[ARow-1]->EditStyle = esPickList;
+      OptionsEditor->ItemProps[ARow-1]->PickList->Text = "0\n0.5\n1";
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1063,6 +1110,26 @@ void __fastcall TForm1::OptionsEditorStringsChange(TObject *Sender)
   if (!Core || !Core->Select) return;
   Core->Select->SetOptions(OptionsEditor->Strings->CommaText);
   Modify = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::MemoChipChange(TObject *Sender)
+{
+  if (!Core || !Core->Select) return;
+  if (Core->Select->MemoChip != MemoChip->Text)
+  {
+    Core->Select->MemoChip = MemoChip->Text;
+    Modify = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::MemoModelChange(TObject *Sender)
+{
+  if (!Core) return;
+  if (Core->MemoModel != MemoModel->Text)
+  {
+    Core->MemoModel = MemoModel->Text;
+    Modify = true;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::PopupMenuOptionsPopup(TObject *Sender)
@@ -1184,11 +1251,6 @@ void __fastcall TForm1::KeyNewClick(TObject *Sender)
   FileName = "";
   Modify = false;
   PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
-  if (PageControl1->ActivePage != TabPanekit)
-  {
-    PageControl1->ActivePage = TabVal;
-    PageControl1->ActivePage = TabBody;
-  }
   ScriptOut->Clear();
   LuaOut->Clear();
   RunScript = false;
@@ -1228,8 +1290,6 @@ void __fastcall TForm1::KeyOpenClick(TObject *Sender)
     FileName = OpenDialog->FileName;
     Modify = false;
     PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
-    PageControl1->ActivePage = TabVal;
-    PageControl1->ActivePage = TabBody;
     ScriptOut->Clear();
     LuaOut->Clear();
     RunScript = false;
@@ -1247,7 +1307,7 @@ void __fastcall TForm1::KeySaveClick(TObject *Sender)
     return;
   }
 
-  if (Core->Comment.SubString(1, 5) != "[RCD]")
+  if (!Core->FlagRCD)
   {
     if (Application->MessageBox(
         "このモデルファイルにはRigidChipsDesignerシグネチャがありません\n"
@@ -1286,7 +1346,7 @@ void __fastcall TForm1::KeyImportClick(TObject *Sender)
 {
   KeyNewClick(Sender);
   if (Modify) return;
-  PageControl1->ActivePage = TabPanekit;
+  PageControlRight->ActivePage = TabPanekit;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyExitClick(TObject *Sender)
@@ -1350,25 +1410,9 @@ void __fastcall TForm1::KeyDefViewInitilizeClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyOptSaveClick(TObject *Sender)
 {
-  KeySaveObfuscate->Checked = RCDSaver->optObfuscate;
-  KeySpaceBlock->Checked = RCDSaver->optSpaceAfterBlockType;
-  KeyNLBlock->Checked = RCDSaver->optNewLineAfterBlockType;
-  KeySpaceOpt->Checked = RCDSaver->optSpaceAfterOptions;
-  KeyNLOpt->Checked = RCDSaver->optNewLineAfterOptions;
-  KeySpaceComma->Checked = RCDSaver->optSpaceAfterComma;
-  KeyNoSubNoNL->Checked = RCDSaver->optNoSubNoNewLine;
-}
-//---------------------------------------------------------------------------
-void __fastcall TForm1::KeySaveOptionClick(TObject *Sender)
-{
-  ((TMenuItem*)Sender)->Checked = !((TMenuItem*)Sender)->Checked;
-  RCDSaver->optObfuscate = KeySaveObfuscate->Checked;
-  RCDSaver->optSpaceAfterBlockType = KeySpaceBlock->Checked;
-  RCDSaver->optNewLineAfterBlockType = KeyNLBlock->Checked;
-  RCDSaver->optSpaceAfterOptions = KeySpaceOpt->Checked;
-  RCDSaver->optNewLineAfterOptions = KeyNLOpt->Checked;
-  RCDSaver->optSpaceAfterComma = KeySpaceComma->Checked;
-  RCDSaver->optNoSubNoNewLine = KeyNoSubNoNL->Checked;
+  TFormOptionSave *form = new TFormOptionSave(this);
+  form->ShowModal();
+  delete form;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::KeyEditClick(TObject *Sender)
@@ -1693,28 +1737,70 @@ void __fastcall TForm1::ListNorthClick(TObject *Sender)
   EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
-void __fastcall TForm1::PageControl1Change(TObject *Sender)
+void __fastcall TForm1::TreeViewBodyChange(TObject *Sender,
+      TTreeNode *Node)
+{
+  SelectionChange((TRigidChip*)Node->Data);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ButtonSwitchClick(TObject *Sender)
+{
+  if (TreeViewBody->Visible)
+  {
+    TreeViewBody->Visible = false;
+    ButtonPlus->Left = 5;
+    ButtonPlus->Width = 25;
+    ButtonMinus->Left = 5;
+    ButtonMinus->Width = 25;
+    ListNorth->Visible = true;
+    ListEast->Visible = true;
+    ListWest->Visible = true;
+    ListSouth->Visible = true;
+    ButtonParent->Visible = true;
+  }
+  else
+  {
+    TreeViewBody->Visible = true;
+    ButtonPlus->Left = 0;
+    ButtonPlus->Width = 20;
+    ButtonMinus->Left = 0;
+    ButtonMinus->Width = 20;
+    ListNorth->Visible = false;
+    ListEast->Visible = false;
+    ListWest->Visible = false;
+    ListSouth->Visible = false;
+    ButtonParent->Visible = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::PageControlRightChange(TObject *Sender)
 {
   if (!Core) return;
-  if (PageControl1->ActivePage == TabVal)
+  if (PageControlRight->ActivePage == TabVal)
   {
     ListVariables->Items->Clear();
     for (TRigidChipsVariableMap::iterator i = Core->Variables.begin(); i != Core->Variables.end(); i ++)
       ListVariables->Items->AddObject(i->first, (TObject*)i->second);
   }
-  else if (PageControl1->ActivePage == TabKey)
+  else if (PageControlRight->ActivePage == TabKey)
   {
     ComboKeyVarName->Items->Clear();
     for (TRigidChipsVariableMap::iterator i = Core->Variables.begin(); i != Core->Variables.end(); i ++)
       ComboKeyVarName->Items->AddObject(i->first, (TObject*)i->second);
     ComboKeyNoChange(Sender);
   }
-  else if (PageControl1->ActivePage == TabScript)
+  else if (PageControlRight->ActivePage == TabBody)
+  {
+    PageControlBody->ActivePage = TabOptions;
+    if (Core->MemoModel != MemoModel->Text)
+      MemoModel->Text = Core->MemoModel;
+  }
+  else if (PageControlRight->ActivePage == TabScript)
   {
     if (Core->Script->ScriptText != MemoScript->Text)
       MemoScript->Text = Core->Script->ScriptText;
   }
-  else if (PageControl1->ActivePage == TabLua)
+  else if (PageControlRight->ActivePage == TabLua)
   {
     if (Core->Lua != MemoLua->Text)
       MemoLua->Text = Core->Lua;
@@ -1739,7 +1825,7 @@ void __fastcall TForm1::ButtonVarDelClick(TObject *Sender)
   if (ListVariables->ItemIndex == -1) return;
   Core->Variables.erase(ListVariables->Items->Strings[ListVariables->ItemIndex]);
   Modify = true;
-  PageControl1Change(Sender);
+  PageControlRightChange(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ButtonVarOkClick(TObject *Sender)
@@ -1772,7 +1858,7 @@ void __fastcall TForm1::ButtonVarOkClick(TObject *Sender)
   var->Disp = CheckVarDisp->Checked;
 
   Modify = true;
-  PageControl1Change(Sender);
+  PageControlRightChange(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ButtonVarColorClick(TObject *Sender)
@@ -1823,7 +1909,7 @@ void __fastcall TForm1::ButtonKeyDelClick(TObject *Sender)
   if (i != -1)
     Core->KeyList->Delete(i);
   Modify = true;
-  PageControl1Change(Sender);
+  PageControlRightChange(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ButtonKeyOkClick(TObject *Sender)
@@ -1854,7 +1940,7 @@ void __fastcall TForm1::ButtonKeyOkClick(TObject *Sender)
   }
 
   Modify = true;
-  PageControl1Change(Sender);
+  PageControlRightChange(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::ButtonScriptResetClick(TObject *Sender)
@@ -2651,7 +2737,7 @@ void __fastcall TForm1::ListPanekitClick(TObject *Sender)
   {
     for (int i = 0; i < 8; i ++)
       MemoPanekit->Lines->Add(ReadPanekitString(fp, 15));
-    Core->Comment = "[RCD]" + ListPanekit->Items->Strings[ListPanekit->ItemIndex] + "\r\n" + MemoPanekit->Text;
+    Core->MemoModel = ListPanekit->Items->Strings[ListPanekit->ItemIndex] + "\r\n" + MemoPanekit->Text;
   }
   else
   {

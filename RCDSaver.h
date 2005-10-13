@@ -8,7 +8,6 @@ class TRigidChipCore;
 class TRCDSaver
 {
 public:
-        bool optObfuscate;
         bool optSpaceAfterBlockType;
         bool optNewLineAfterBlockType;
         bool optSpaceAfterOptions;
@@ -19,7 +18,7 @@ public:
 
         AnsiString ErrorMessage;
         AnsiString ChipToString(AnsiString tabs, TRigidChip *chip);
-        void Save(AnsiString filename, TRigidChipCore *core);
+        AnsiString Save(AnsiString filename, TRigidChipCore *core);
 
         TRCDSaver();
 };

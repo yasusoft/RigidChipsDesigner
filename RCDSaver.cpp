@@ -11,7 +11,6 @@
 //---------------------------------------------------------------------------
 TRCDSaver::TRCDSaver()
 {
-  optObfuscate = false;
   optSpaceAfterBlockType = false;
   optNewLineAfterBlockType = true;
   optSpaceAfterOptions = true;
@@ -47,24 +46,25 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
   AnsiString br = "\r\n";
 
   AnsiString dir[] = {"", "N:", "E:", "S:", "W:"};
-  if (optObfuscate)
-  {
-    afteropt = "";
-    aftercomma = "";
-    tab = "";
-    tabs = "";
-    sp = "";
-    br = "";
-    dir[1] = "";
-  }
   // settings end
 
   tabs += tab;
-  AnsiString str = tabs;
+  AnsiString str;
 
-  str += dir[chip->Direction];
+  TStringList *lines = new TStringList;
+  try {
+    lines->Text = chip->MemoChip;
+    for (int i = 0; i < lines->Count; i ++)
+      if (lines->Strings[i] != "")
+        lines->Strings[i] = tabs + "// " + lines->Strings[i];
+      else
+        lines->Strings[i] = tabs + "//";
+    str += lines->Text;
+  } __finally {
+    delete lines;
+  }
 
-  str += chip->GetTypeString();
+  str += tabs + dir[chip->Direction] + chip->GetTypeString();
 
   AnsiString opt;
   for (int i = 0; i < chip->Options->Count; i ++)
@@ -94,7 +94,7 @@ AnsiString TRCDSaver::ChipToString(AnsiString tabs, TRigidChip *chip)
   return str;
 }
 //---------------------------------------------------------------------------
-void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
+AnsiString TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
 {
   TStringList *lines = new TStringList;
   try
@@ -124,21 +124,14 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
     else
       tab = "\t";
 
-    // Comment
-    if (core->Comment.SubString(1, 5) != "[RCD]")
-      core->Comment = "[RCD]" + core->Comment;
-    lines->Text = core->Comment;
-    AnsiString cmt;
+    // ModelMemo
+    core->FlagRCD = true;
+    lines->Text = "[RCD] " + core->MemoModel;
     for (int i = 0; i < lines->Count; i ++)
       if (lines->Strings[i] != "")
         lines->Strings[i] = "// " + lines->Strings[i];
       else
         lines->Strings[i] = "//";
-    if (optObfuscate)
-    {
-      cmt = lines->Text;
-      lines->Clear();
-    }
 
     // Val
     lines->Add("Val" + aftertype + "{");
@@ -207,16 +200,6 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
     lines->Add("Body" + aftertype + "{");
     lines->Add(ChipToString("", core) + "}");
 
-    if (optObfuscate)
-    {
-      AnsiString str = lines->Text;
-      str = StringReplace(str, " ", "", TReplaceFlags() << rfReplaceAll);
-      str = StringReplace(str, "\t", "", TReplaceFlags() << rfReplaceAll);
-      str = StringReplace(str, "\r", "", TReplaceFlags() << rfReplaceAll);
-      str = StringReplace(str, "\n", "", TReplaceFlags() << rfReplaceAll);
-      lines->Text = cmt + str;
-    }
-
     // Script or Lua
     if (core->Script->ScriptText != "")
     {
@@ -227,12 +210,15 @@ void TRCDSaver::Save(AnsiString filename, TRigidChipCore *core)
       lines->Add("Lua" + aftertype + "{" + core->Lua + "}");
     }
 
+    if (filename == "")
+      return lines->Text;
     lines->SaveToFile(filename);
   }
   __finally
   {
     delete lines;
   }
+  return "";
 }
 //---------------------------------------------------------------------------
 
