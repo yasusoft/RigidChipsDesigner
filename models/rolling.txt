@@ -1,0 +1,125 @@
+// [RCD] Yasu software - Machine 'ROLLING' for RigidChips
+// http://www.yasu.nu/
+//
+// [Usage]
+// Å™Å´: ENGINE
+// Å©Å®: HANDLE
+// Z: CHANGE SPEED
+//
+Val
+{
+	ENGINE(default=0, min=-1, max=1, step=1)
+	ANGLEW(default=0, min=-20, max=20, step=5)
+	ANGLEE(default=0, min=-20, max=20, step=5)
+	ANGLE0(default=90,min=0, max=90)
+	ANGLE1(default=90,min=0, max=90)
+	ANGLE2(default=90,min=0, max=90)
+	ANGLE3(default=90,min=0, max=90)
+	ANGLE4(default=0, min=0, max=90)
+	ANGLE5(default=0, min=0, max=90)
+	ANGLE6(default=0, min=0, max=90)
+	ANGLE7(default=0, min=0, max=90)
+	ANGLE8(default=0, min=0, max=90)
+	ANGLE9(default=0, min=0, max=90)
+	SPEED(default=0, min=0, max=1, step=1)
+}
+Key
+{
+	0:ENGINE(step=1)
+	1:ENGINE(step=-1)
+	2:ANGLEW(step=5), ANGLEE(step=-5)
+	3:ANGLEW(step=-5), ANGLEE(step=5)
+	4:SPEED(step=1)
+}
+Body
+{
+	Core(){
+		S:Chip(angle=ANGLE0){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		S:Chip(angle=ANGLE1){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		S:Chip(angle=ANGLE2){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		S:Chip(angle=ANGLE3){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		S:Chip(angle=ANGLE4){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		}}}}}
+		W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		N:Chip(angle=ANGLE9){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		N:Chip(angle=ANGLE8){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		N:Chip(angle=ANGLE7){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		N:Chip(angle=ANGLE6){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		N:Chip(angle=ANGLE5){ W:Weight(angle=ANGLEW){} E:Weight(angle=ANGLEE){}
+		}}}}}
+	}
+}
+Lua
+{
+	DIFF = 20
+	state = 0
+	spold = 0
+
+	function main()
+		if ENGINE == 1 or ENGINE == -1 then
+			if state == 0 then
+				ANGLE0 = ANGLE0 - DIFF * ENGINE
+				ANGLE4 = ANGLE4 + DIFF * ENGINE
+				if ANGLE0 <= 0 then state = 1 end
+				if ANGLE0 >= 90 then state = 9 end
+			elseif state == 1 then
+				ANGLE1 = ANGLE1 - DIFF * ENGINE
+				ANGLE5 = ANGLE5 + DIFF * ENGINE
+				if ANGLE1 <= 0 then state = 2 end
+				if ANGLE1 >= 90 then state = 0 end
+			elseif state == 2 then
+				ANGLE2 = ANGLE2 - DIFF * ENGINE
+				ANGLE6 = ANGLE6 + DIFF * ENGINE
+				if ANGLE2 <= 0 then state = 3 end
+				if ANGLE2 >= 90 then state = 1 end
+			elseif state == 3 then
+				ANGLE3 = ANGLE3 - DIFF * ENGINE
+				ANGLE7 = ANGLE7 + DIFF * ENGINE
+				if ANGLE3 <= 0 then state = 4 end
+				if ANGLE3 >= 90 then state = 2 end
+			elseif state == 4 then
+				ANGLE4 = ANGLE4 - DIFF * ENGINE
+				ANGLE8 = ANGLE8 + DIFF * ENGINE
+				if ANGLE4 <= 0 then state = 5 end
+				if ANGLE4 >= 90 then state = 3 end
+			elseif state == 5 then
+				ANGLE5 = ANGLE5 - DIFF * ENGINE
+				ANGLE9 = ANGLE9 + DIFF * ENGINE
+				if ANGLE5 <= 0 then state = 6 end
+				if ANGLE5 >= 90 then state = 4 end
+			elseif state == 6 then
+				ANGLE6 = ANGLE6 - DIFF * ENGINE
+				ANGLE0 = ANGLE0 + DIFF * ENGINE
+				if ANGLE6 <= 0 then state = 7 end
+				if ANGLE6 >= 90 then state = 5 end
+			elseif state == 7 then
+				ANGLE7 = ANGLE7 - DIFF * ENGINE
+				ANGLE1 = ANGLE1 + DIFF * ENGINE
+				if ANGLE7 <= 0 then state = 8 end
+				if ANGLE7 >= 90 then state = 6 end
+			elseif state == 8 then
+				ANGLE8 = ANGLE8 - DIFF * ENGINE
+				ANGLE2 = ANGLE2 + DIFF * ENGINE
+				if ANGLE8 <= 0 then state = 9 end
+				if ANGLE8 >= 90 then state = 7 end
+			elseif state == 9 then
+				ANGLE9 = ANGLE9 - DIFF * ENGINE
+				ANGLE3 = ANGLE3 + DIFF * ENGINE
+				if ANGLE9 <= 0 then state = 0 end
+				if ANGLE9 >= 90 then state = 8 end
+			end
+		end
+
+		if SPEED == 1 and spold == 0 then
+			if DIFF <= 45 then
+				DIFF = DIFF + 5
+			else
+				DIFF = 5
+			end
+		end
+		spold = SPEED
+
+		out(0, "DIFF = " .. DIFF)
+		out(1, "STATE = " .. state)
+	end
+}

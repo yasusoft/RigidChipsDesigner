@@ -155,7 +155,7 @@ class TRigidChipWeight : public TRigidChip
 public:
         virtual TRigidChipsType GetType(){ return ctWeight; }
         virtual AnsiString GetTypeString(){ return "Weight"; }
-        virtual float GetMass(){ return 100.80; }
+        virtual float GetMass();
         static GLuint Texture;
         virtual GLuint GetTexture(){ return Texture; }
 };
@@ -267,6 +267,7 @@ public:
 class TRigidChipCowl : public TRigidChip
 {
 protected:
+        virtual void DrawCowl(int transmode);
         virtual void DrawMain();
         virtual void DrawTranslucentMain();
 public:

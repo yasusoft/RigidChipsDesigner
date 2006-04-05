@@ -312,7 +312,7 @@ object Form1: TForm1
           Height = 20
           Anchors = [akLeft, akRight, akBottom]
           ImeMode = imDisable
-          ItemHeight = 12
+          ItemHeight = 0
           TabOrder = 1
           Text = 'VAR'
         end
@@ -667,6 +667,186 @@ object Form1: TForm1
               OnChange = MemoModelChange
             end
           end
+          object TabCowlEffect: TTabSheet
+            Caption = 'CowlEffect'
+            ImageIndex = 3
+            TabVisible = False
+            DesignSize = (
+              139
+              193)
+            object LabelCowlTrans: TLabel
+              Left = 5
+              Top = 30
+              Width = 69
+              Height = 12
+              Caption = 'Transparency'
+              FocusControl = ComboCowlTrans
+            end
+            object LabelCowlEmissive: TLabel
+              Left = 5
+              Top = 70
+              Width = 46
+              Height = 12
+              Caption = 'Emissive'
+              FocusControl = ComboCowlEmissive
+            end
+            object LabelCowlShininess: TLabel
+              Left = 5
+              Top = 110
+              Width = 49
+              Height = 12
+              Caption = 'Shininess'
+              FocusControl = ComboCowlShininess
+            end
+            object LabelCowlSpecular: TLabel
+              Left = 5
+              Top = 150
+              Width = 44
+              Height = 12
+              Caption = 'Specular'
+              FocusControl = ComboCowlSpecular
+            end
+            object ComboCowlEffect: TComboBox
+              Left = 5
+              Top = 5
+              Width = 125
+              Height = 20
+              AutoComplete = False
+              Anchors = [akLeft, akTop, akRight]
+              Font.Charset = SHIFTJIS_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -12
+              Font.Name = #65325#65331' '#12468#12471#12483#12463
+              Font.Style = []
+              ImeMode = imDisable
+              ItemHeight = 12
+              ParentFont = False
+              TabOrder = 0
+              Text = '#00FB'
+              OnChange = ComboCowlEffectChange
+              Items.Strings = (
+                '#00FB'
+                '#0F00'
+                '#8000'
+                '#F000')
+            end
+            object ComboCowlTrans: TComboBox
+              Left = 5
+              Top = 45
+              Width = 125
+              Height = 20
+              Style = csDropDownList
+              Anchors = [akLeft, akTop, akRight]
+              ImeMode = imDisable
+              ItemHeight = 12
+              TabOrder = 1
+              OnChange = ComboCowlEffectChange
+              Items.Strings = (
+                '0'
+                '1'
+                '2'
+                '3'
+                '4'
+                '5'
+                '6'
+                '7'
+                '8'
+                '9'
+                '10'
+                '11'
+                '12'
+                '13'
+                '14'
+                '15')
+            end
+            object ComboCowlEmissive: TComboBox
+              Left = 5
+              Top = 85
+              Width = 125
+              Height = 20
+              Style = csDropDownList
+              Anchors = [akLeft, akTop, akRight]
+              ImeMode = imDisable
+              ItemHeight = 12
+              TabOrder = 2
+              OnChange = ComboCowlEffectChange
+              Items.Strings = (
+                '0'
+                '1'
+                '2'
+                '3'
+                '4'
+                '5'
+                '6'
+                '7'
+                '8'
+                '9'
+                '10'
+                '11'
+                '12'
+                '13'
+                '14'
+                '15')
+            end
+            object ComboCowlShininess: TComboBox
+              Left = 5
+              Top = 125
+              Width = 125
+              Height = 20
+              Style = csDropDownList
+              Anchors = [akLeft, akTop, akRight]
+              ImeMode = imDisable
+              ItemHeight = 12
+              TabOrder = 3
+              OnChange = ComboCowlEffectChange
+              Items.Strings = (
+                '0'
+                '1'
+                '2'
+                '3'
+                '4'
+                '5'
+                '6'
+                '7'
+                '8'
+                '9'
+                '10'
+                '11'
+                '12'
+                '13'
+                '14'
+                '15')
+            end
+            object ComboCowlSpecular: TComboBox
+              Left = 5
+              Top = 165
+              Width = 125
+              Height = 20
+              Style = csDropDownList
+              Anchors = [akLeft, akTop, akRight]
+              ImeMode = imDisable
+              ItemHeight = 12
+              TabOrder = 4
+              OnChange = ComboCowlEffectChange
+              Items.Strings = (
+                '0'
+                '1'
+                '2'
+                '3'
+                '4'
+                '5'
+                '6'
+                '7'
+                '8'
+                '9'
+                '10'
+                '11'
+                '12'
+                '13'
+                '14'
+                '15')
+            end
+          end
         end
         object ButtonSwitch: TButton
           Left = 0
@@ -1003,6 +1183,7 @@ object Form1: TForm1
     Top = 15
     object KeyFile: TMenuItem
       Caption = '&File'
+      OnClick = KeyFileClick
       object KeyNew: TMenuItem
         Caption = '&New'
         ShortCut = 16462
@@ -1025,8 +1206,14 @@ object Form1: TForm1
       object KeyFileBar1: TMenuItem
         Caption = '-'
       end
+      object KeyLoadClipboard: TMenuItem
+        Caption = 'Load &Clipboard'
+        ShortCut = 49238
+        OnClick = KeyLoadClipboardClick
+      end
       object KeyImport: TMenuItem
         Caption = 'Import &Panekit...'
+        ShortCut = 16457
         OnClick = KeyImportClick
       end
       object KeyFileBar2: TMenuItem
@@ -1306,7 +1493,7 @@ object Form1: TForm1
       Caption = '-'
     end
     object KeyPasteDirection: TMenuItem
-      Caption = '&Paste'
+      Caption = '&Paste(Direction)'
       OnClick = KeyPasteClick
     end
   end

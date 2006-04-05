@@ -1,0 +1,142 @@
+// [RCD] Yasu software - Machine 'PLATE' for RigidChips
+// http://www.yasu.nu/
+//
+// [USAGE]
+// Å©Å®: HANDLE
+// Å™: ENGINE
+// Å´: CHANGE SPEED
+// OTHERS: FOR MANUAL DEBUG
+//
+Val
+{
+	HANDLE(default=0,min=-30,max=30,step=5)
+	ENGINE(default=0,min=0,max=1,step=1)
+	ANGLE1(default=0,min=0,max=180)
+	ANGLE2(default=180,min=0,max=180)
+	ANGLE3(default=180,min=0,max=180)
+	SPEED(default=0,min=0,max=1,step=1)
+	DIFF(default=5)
+	moving(disp=0)
+	state(disp=0)
+	spold(disp=0)
+}
+Key
+{
+	0:ENGINE(step=1)
+	2:HANDLE(step=-5)
+	3:HANDLE(step=5)
+	4:ANGLE1(step=5)
+	7:ANGLE1(step=-5)
+	5:ANGLE2(step=5)
+	8:ANGLE2(step=-5)
+	6:ANGLE3(step=5)
+	9:ANGLE3(step=-5)
+	1:SPEED(step=1)
+}
+Body
+{
+	Core(){
+		W:Chip(){}
+		E:Chip(){}
+		N:Chip(){
+			W:Chip(){}
+			E:Chip(){}
+			N:Chip(angle=-Angle1){
+				W:Chip(){}
+				E:Chip(){}
+				N:Rudder(angle=Handle){
+					W:Chip(){}
+					E:Chip(){}
+					N:Chip(){
+						W:Chip(){}
+						E:Chip(){}
+						N:Chip(angle=-Angle2){
+							W:Chip(){}
+							E:Chip(){}
+							N:Chip(){
+								W:Chip(){}
+								E:Chip(){}
+								N:Chip(){
+									W:Chip(){}
+									E:Chip(){}
+									N:Chip(angle=-Angle3){
+										W:Chip(){}
+										E:Chip(){}
+										N:Chip(){
+											W:Chip(){}
+											E:Chip(){}
+											N:Chip(){
+												W:Chip(){}
+												E:Chip(){}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		S:Chip(){
+			W:Chip(){}
+			E:Chip(){}
+		}
+	}
+}
+Script
+{
+	IF ENGINE <> 1 & moving <> 1 { GOTO IF1END }
+		moving = 1
+		IF state <> 0 { GOTO IF11END }
+			ANGLE1 = ANGLE1 + DIFF
+			if ANGLE1 < 180 { GOTO IF1END }
+				state = 1
+				moving = 0
+			GOTO IF1END
+		LABEL IF11END
+		IF state <> 1 { GOTO IF12END }
+			ANGLE2 = ANGLE2 - DIFF
+			if ANGLE2 > 0 { GOTO IF1END }
+				state = 2
+				moving = 0
+			GOTO IF1END
+		LABEL IF12END
+		IF state <> 2 { GOTO IF13END }
+			ANGLE3 = ANGLE3 - DIFF
+			if ANGLE3 > 0 { GOTO IF1END }
+				state = 3
+				moving = 0
+			GOTO IF1END
+		LABEL IF13END
+		IF state <> 3 { GOTO IF14END }
+			ANGLE2 = ANGLE2 + DIFF
+			if ANGLE2 < 180 { GOTO IF1END }
+				state = 4
+				moving = 0
+			GOTO IF1END
+		LABEL IF14END
+		IF state <> 4 { GOTO IF15END }
+			ANGLE1 = ANGLE1 - DIFF
+			ANGLE3 = ANGLE3 + DIFF
+			if ANGLE3 < 180 { GOTO IF1END }
+				state = 0
+				moving = 0
+			GOTO IF1END
+		LABEL IF15END
+	LABEL IF1END
+
+	IF SPEED <> 1 | spold <> 0 { GOTO IF2END }
+			IF DIFF > 20 { GOTO IF21ELSE }
+				DIFF = DIFF + 5
+				GOTO IF21END
+			LABEL IF21ELSE
+				DIFF = 5
+			LABEL IF21END
+	LABEL IF2END
+	spold = SPEED
+
+	PRINT 0, "DIFF = ", DIFF
+	PRINT 1, "STATE = ", state
+	PRINT 2, "MOVIN = ", moving
+}

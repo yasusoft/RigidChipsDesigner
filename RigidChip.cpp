@@ -17,14 +17,26 @@ void glMaterialColor3f(float r, float g, float b)
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
   const float ambient[4] = {0.1*r+0.1, 0.1*g+0.1, 0.1*b+0.1, 1};
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+  const float emissive[4] = {0, 0, 0, 1};
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emissive);
+  const float shininess[4] = {r, g, b, 1};
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+  const float specular[4] = {0.73*r, 0.73*g, 0.73*b, 1};
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
 }
 void glMaterialColor4f(float r, float g, float b, float a)
 {
-  glColor3f(r, g, b);
-  const float diffuse[4] = {0.8*r, 0.8*g, 0.8*b, a};
+  glColor4f(r, g, b, a);
+  //const float diffuse[4] = {0.8*r, 0.8*g, 0.8*b, 1};
+  const float diffuse[4] = {0, 0, 0, a};
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-  const float ambient[4] = {0.1*r+0.1, 0.1*g+0.1, 0.1*b+0.1, a};
+  //const float ambient[4] = {0.1*r+0.1, 0.1*g+0.1, 0.1*b+0.1, 1};
+  const float ambient[4] = {r, g, b, 1};
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+  const float zero[4] = {0, 0, 0, 0};
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, zero);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, zero);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, zero);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -52,14 +64,21 @@ TRigidChipsVariable::TRigidChipsVariable(TRigidChipCore *c, AnsiString opt)
 //---------------------------------------------------------------------------
 void TRigidChipsVariable::SetValue(double v)
 {
-  if (FValue == v) return;
-  Modify = true;
   if (v < Min)
+  {
     FValue = Min;
+    Modify = true;
+  }
   else if (FlagMax && v > Max)
+  {
     FValue = Max;
-  else
+    Modify = true;
+  }
+  else if (FValue != v)
+  {
     FValue = v;
+    Modify = true;
+  }
 }
 //---------------------------------------------------------------------------
 void TRigidChipsVariable::Act()
@@ -81,6 +100,10 @@ void TRigidChipsVariable::Act()
         FValue -= Step;
     }
   }
+  if (FValue < Min)
+    FValue = Min;
+  else if (FlagMax && FValue > Max)
+    FValue = Max;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -360,7 +383,7 @@ void TRigidChip::DrawTranslucent(TRigidChip *caller)
   if (Core->Select == this)
   {
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     #define DRAW_SELECTION(r, g, b) { \
         glMaterialColor4f(r, g, b, 0.5); \
         glBegin(GL_QUADS); \
@@ -623,6 +646,14 @@ void TRigidChipFrame::DrawTranslucentMain()
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 GLuint TRigidChipWeight::Texture;
+float TRigidChipWeight::GetMass()
+{
+  double opt = 1;
+  if (Core->StrToDouble(Options->Values["option"], &opt) && 1 <= opt && opt <= 8)
+    return 100.80 * opt;
+  else
+    return 100.80;
+}
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 GLuint TRigidChipWheel::Texture;
@@ -648,8 +679,8 @@ void TRigidChipWheel::DrawMain()
   glNormal3f(0, 0, 1);
   for (double a = -M_PI; a < M_PI; a += 0.2)
   {
-    glTexCoord2d(cos(a)/2+0.5, sin(a)/2+0.5);
-    glVertex3d(cos(a), sin(a), 0);
+    glTexCoord2f(cos(a)/2+0.5, sin(a)/2+0.5);
+    glVertex3f(cos(a), sin(a), 0);
   }
   glEnd();
   glDisable(GL_TEXTURE_2D);
@@ -685,11 +716,11 @@ void TRigidChipWheel::DrawMain()
     for (double a = -M_PI; a < M_PI; a += d)
     {
       glNormal3f(cos(a), sin(a), 0);
-      glVertex3d(r*cos(a  ), r*sin(a  ),  w);
-      glVertex3d(r*cos(a  ), r*sin(a  ), -w);
+      glVertex3f(r*cos(a  ), r*sin(a  ),  w);
+      glVertex3f(r*cos(a  ), r*sin(a  ), -w);
       glNormal3f(cos(a+d), sin(a+d), 0);
-      glVertex3d(r*cos(a+d), r*sin(a+d), -w);
-      glVertex3d(r*cos(a+d), r*sin(a+d),  w);
+      glVertex3f(r*cos(a+d), r*sin(a+d), -w);
+      glVertex3f(r*cos(a+d), r*sin(a+d),  w);
     }
     glMaterialColor3f(0.5, 0.5, 0.5);
     glNormal3f(0, 0, 1);
@@ -776,8 +807,8 @@ void TRigidChipJet::DrawMain()
     glNormal3f(0, 0, 1);
     for (double a = -M_PI; a < M_PI; a += 0.2)
     {
-      glTexCoord2d(cos(a)/2+0.5, sin(a)/2+0.5);
-      glVertex3d(cos(a), sin(a), 0);
+      glTexCoord2f(cos(a)/2+0.5, sin(a)/2+0.5);
+      glVertex3f(cos(a), sin(a), 0);
     }
     glEnd();
   }
@@ -807,10 +838,10 @@ void TRigidChipJet::DrawTranslucentMain()
       if (power > 1000)
         power = 1000;
       glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-      glMaterialColor4f(0, 1, 1, 0.7); // 小さい炎
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glMaterialColor4f(0, 1, 1, 0.5); // 小さい炎
       gluCylinder(quadric, 0.25, 0, power / 300 + 0.25*sin(anime * M_PI / 180), 8, 1);
-      glMaterialColor4f(0, 0, 1, 0.7); // 大きい炎
+      glMaterialColor4f(0, 0, 1, 0.25); // 大きい炎
       gluCylinder(quadric, 0.5, 0, power / 200 + 0.25*sin(anime * M_PI / 180), 8, 1);
       glDisable(GL_BLEND);
       glPopMatrix();
@@ -1049,7 +1080,7 @@ void TRigidChipArm::DrawTranslucentMain()
     glTranslatef(0, -0.1, 0);
     glRotatef(-90, 1, 0, 0);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glMaterialColor4f(1, 1, 0, 0.5);
     gluCylinder(quadric, opt/200000.0+0.1, opt/250000.0, 2.5, 8, 4);
     glDisable(GL_BLEND);
@@ -1096,11 +1127,62 @@ GLuint TRigidChipCowl::Texture2;
 GLuint TRigidChipCowl::Texture34;
 GLuint TRigidChipCowl::Texture5;
 //---------------------------------------------------------------------------
-void TRigidChipCowl::DrawMain()
+void TRigidChipCowl::DrawCowl(int transmode)
 {
-  if (!Core->ShowCowl)
-    return;
+  int istrans = 0;
 
+  // エフェクト用に色の再設定
+  if (Options->Values["effect"] != "")
+  {
+    float rgb[4] = {1, 1, 1, 1};
+    double d;
+    if (Core->StrToDouble(Options->Values["color"], &d))
+    {
+      int c = d;
+      rgb[0] = ((c >> 16) & 0xFF) / 255.0;
+      rgb[1] = ((c >>  8) & 0xFF) / 255.0;
+      rgb[2] = ((c >>  0) & 0xFF) / 255.0;
+    }
+
+    if (Core->StrToDouble(Options->Values["effect"], &d))
+    {
+      int effect = d;
+      int trans = (effect >> 12) & 0xF;
+      float emit  = ((effect >>  8) & 0xF) / 15.0;
+      float shine = ((effect >>  4) & 0xF) / 15.0;
+      float spec  = ( effect        & 0xF) / 15.0;
+      // 透明色
+      if (trans > 0)
+      {
+        rgb[3] = 1 - (trans / 15.0);
+        glMaterialColor4f(rgb[0], rgb[1], rgb[2], rgb[3]);
+        istrans = 1;
+      }
+      // EMISSIVE
+      const float emissive[4] = {rgb[0]*emit, rgb[1]*emit, rgb[2]*emit, 1};
+      glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emissive);
+      // SHININESS
+      const float shininess[4] = {rgb[0]*shine, rgb[0]*shine, rgb[0]*shine, 1};
+      glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+      // SPECULAR
+      const float specular[4] = {rgb[0]*spec, rgb[0]*spec, rgb[0]*spec, 1};
+      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    }
+  }
+
+  if (istrans)
+  {
+    if (!transmode)
+      return;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  }
+  else
+  {
+    if (transmode)
+      return;
+  }
+  
   glEnable(GL_TEXTURE_2D);
   glNormal3f(0, 0, 1);
   switch (Options->Values["option"].ToIntDef(0))
@@ -1150,8 +1232,8 @@ void TRigidChipCowl::DrawMain()
       glBegin(GL_POLYGON);
       for (double a = -M_PI; a < M_PI; a += 0.2)
       {
-        glTexCoord2d(cos(a)/2+0.5, sin(a)/2+0.5);
-        glVertex3d(cos(a), sin(a), 0);
+        glTexCoord2f(cos(a)/2+0.5, sin(a)/2+0.5);
+        glVertex3f(cos(a), sin(a), 0);
       }
       glEnd();
       break;
@@ -1183,8 +1265,8 @@ void TRigidChipCowl::DrawMain()
       glBegin(GL_POLYGON);
         for (double a = 0; a < M_PI; a += 0.2)
         {
-          glTexCoord2d(cos(a)/2+0.5, sin(a)/2+0.5);
-          glVertex3d(cos(a), sin(a), 0);
+          glTexCoord2f(cos(a)/2+0.5, sin(a)/2+0.5);
+          glVertex3f(cos(a), sin(a), 0);
         }
         glTexCoord2f(0.25, 0);
         glVertex3f(-0.5, -1, 0);
@@ -1199,27 +1281,42 @@ void TRigidChipCowl::DrawMain()
     }
   }
   glDisable(GL_TEXTURE_2D);
+  glDisable(GL_BLEND);
+}
+//---------------------------------------------------------------------------
+void TRigidChipCowl::DrawMain()
+{
+  if (!Core->ShowCowl)
+    return;
+
+  DrawCowl(0);
 }
 //---------------------------------------------------------------------------
 void TRigidChipCowl::DrawTranslucentMain()
 {
-  int opt = Options->Values["option"].ToIntDef(0);
-  if (opt != 1 || !Core->ShowCowl)
+  if (!Core->ShowCowl)
     return;
 
-  // クリック選択用の透明チップ描画
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_ZERO, GL_ONE);
   glLoadName((GLuint)this);
-  //TRigidChip::DrawMain();
-  glBegin(GL_QUADS);
+  DrawCowl(1);
+  glLoadName(0);
+
+  int opt = Options->Values["option"].ToIntDef(0);
+  if (opt == 1)
+  { // クリック選択用の透明チップ描画
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ZERO, GL_ONE);
+    glLoadName((GLuint)this);
+    //TRigidChip::DrawMain();
+    glBegin(GL_QUADS);
         glNormal3f(0, 0, 1);
         glVertex3f(-0.5, -0.5, 0);
         glVertex3f(-0.5,  0.5, 0);
         glVertex3f( 0.5,  0.5, 0);
         glVertex3f( 0.5, -0.5, 0);
-  glEnd();
-  glLoadName(0);
-  glDisable(GL_BLEND);
+    glEnd();
+    glLoadName(0);
+    glDisable(GL_BLEND);
+  }
 }
 //---------------------------------------------------------------------------

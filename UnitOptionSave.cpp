@@ -20,6 +20,8 @@ __fastcall TFormOptionSave::TFormOptionSave(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TFormOptionSave::FormCreate(TObject *Sender)
 {
+  Core = Form1->RCDLoader->LoadFromString(MemoPreview->Text);
+  /*
   Core = new TRigidChipCore;
   Core->MemoModel =
     "Preview Model\r\n"
@@ -52,6 +54,7 @@ void __fastcall TFormOptionSave::FormCreate(TObject *Sender)
     "balooooon"
   ;
   chip1->AddSubChip(chip3);
+  */
 
   CheckSpaceBlockType->Checked = Form1->RCDSaver->optSpaceAfterBlockType;
   CheckNewLineBlockType->Checked = Form1->RCDSaver->optNewLineAfterBlockType;

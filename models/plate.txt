@@ -1,0 +1,141 @@
+// [RCD] Yasu software - Machine 'PLATE' for RigidChips
+// http://www.yasu.nu/
+//
+// [USAGE]
+// ©¨: HANDLE
+// ª: ENGINE
+// «: CHANGE SPEED
+// OTHERS: FOR MANUAL DEBUG
+//
+Val
+{
+	HANDLE(default=0,min=-30,max=30,step=5)
+	ENGINE(default=0,min=0,max=1,step=1)
+	ANGLE1(default=0,min=0,max=180)
+	ANGLE2(default=180,min=0,max=180)
+	ANGLE3(default=180,min=0,max=180)
+	SPEED(default=0,min=0,max=1,step=1)
+}
+Key
+{
+	0:ENGINE(step=1)
+	2:HANDLE(step=-5)
+	3:HANDLE(step=5)
+	4:ANGLE1(step=5)
+	7:ANGLE1(step=-5)
+	5:ANGLE2(step=5)
+	8:ANGLE2(step=-5)
+	6:ANGLE3(step=5)
+	9:ANGLE3(step=-5)
+	1:SPEED(step=1)
+}
+Body
+{
+	Core(){
+		W:Chip(){}
+		E:Chip(){}
+		N:Chip(){
+			W:Chip(){}
+			E:Chip(){}
+			N:Chip(angle=-Angle1){
+				W:Chip(){}
+				E:Chip(){}
+				N:Rudder(angle=Handle){
+					W:Chip(){}
+					E:Chip(){}
+					N:Chip(){
+						W:Chip(){}
+						E:Chip(){}
+						N:Chip(angle=-Angle2){
+							W:Chip(){}
+							E:Chip(){}
+							N:Chip(){
+								W:Chip(){}
+								E:Chip(){}
+								N:Chip(){
+									W:Chip(){}
+									E:Chip(){}
+									N:Chip(angle=-Angle3){
+										W:Chip(){}
+										E:Chip(){}
+										N:Chip(){
+											W:Chip(){}
+											E:Chip(){}
+											N:Chip(){
+												W:Chip(){}
+												E:Chip(){}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		S:Chip(){
+			W:Chip(){}
+			E:Chip(){}
+		}
+	}
+}
+Lua
+{
+	DIFF = 5
+
+	moving = 0
+	state = 0
+	spold = 0
+
+	function main()
+		if ENGINE == 1 or moving == 1 then
+			moving = 1
+			if state == 0 then
+				ANGLE1 = ANGLE1 + DIFF
+				if ANGLE1 >= 180 then
+					state = 1
+					moving = 0
+				end
+			elseif state == 1 then
+				ANGLE2 = ANGLE2 - DIFF
+				if ANGLE2 <= 0 then
+					state = 2
+					moving = 0
+				end
+			elseif state == 2 then
+				ANGLE3 = ANGLE3 - DIFF
+				if ANGLE3 <= 0 then
+					state = 3
+					moving = 0
+				end
+			elseif state == 3 then
+				ANGLE2 = ANGLE2 + DIFF
+				if ANGLE2 >= 180 then
+					state = 4
+					moving = 0
+				end
+			elseif state == 4 then
+				ANGLE1 = ANGLE1 - DIFF
+				ANGLE3 = ANGLE3 + DIFF
+				if ANGLE3 >= 180 then
+					state = 0
+					moving = 0
+				end
+			end
+		end
+
+		if SPEED == 1 and spold == 0 then
+				if DIFF <= 20 then
+					DIFF = DIFF + 5
+				else
+					DIFF = 5
+				end
+		end
+		spold = SPEED
+
+		out(0, "DIFF = " .. DIFF)
+		out(1, "STATE = " .. state)
+		out(2, "MOVIN = " .. moving)
+	end
+}

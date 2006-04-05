@@ -1,0 +1,75 @@
+関連付け機能
+
+name=の変数が無いからLuaエラーになる
+
+min=0だと省略されちゃう
+省略するかどうかのフラグ
+default以外の#Color表記対応
+
+外国向けにフォントをArialなどにする？
+
+TabValのOkボタン押したときに
+変数のValue値を更新しないと
+step未指定の変数が変化しない
+
+デバッグバージョン
+
+WM_RIGIDCHIP_LOAD
+ネット関係関数
+
+マウスがウィンドウ出ても回転可能に
+
+orz0067.txtでブレーキ時に点滅
+スクリプトで変数更新するとstepされちゃう？
+
+変数の順番保持
+
+user=1or名前指定配下を隠すとか
+
+パネキット
+キー関係にスクリプト使用
+
+Scriptの関数呼び出しは
+Expression呼びまくる？
+Expect(","|")")まで
+_TICKS only
+
+enum ChipTypeの値をRCと同じに
+
+左右対称編集モード
+ペイントモード
+複数選択
+
+RCD用Lua
+chip=IndexOf(5)
+SetOption(chip,"angle",90)
+chip=Parent(chip)
+chip=Child(chip,2)
+SetDirection(chip,"North") --方角は１文字目で判別
+SetType(chip,"frame")
+chip=AddChip(chip,"South","weight")
+chip:AddChip("South","weight")
+DelChip(chip,3) --サブチップの削除
+Copy(chip)
+Paste(chip[,"West"])
+Delete(chip) --そのチップの削除
+--chipは数値かユーザデータか自動判別
+
+MoveTo
+LineTo関数実装したいかも
+
+ツールバー 左側に縦？
+
+Cowl -> Chip
+
+ChipToString
+複数チップ対応
+
+不整合チェック
+変数が使われていない
+未宣言の変数を使用
+
+凹物体　境界
+
+カーソルの色が表と裏で違う
+カーソルのもう片方が見えるか見えないかの違い

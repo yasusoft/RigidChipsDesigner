@@ -1,0 +1,68 @@
+// [RCD] Yasu software - Machine "OTL" for RigidChips
+// http://www.yasu.nu/
+//
+// [Usage]
+// Å™Å´: ENGINE
+// Å©Å®: HANDLE?
+// Z: BEHEAD
+//
+Val
+{
+	ENGINE(default=0, min=-20000, max=20000, step=2000)
+	HANDE(default=90, min=75, max=100, step=5)
+	HANDW(default=90, min=75, max=100, step=5)
+	BEHEAD(default=0, min=0, max=1, step=1)
+	POWER(default=0, min=0, max=100000, step=5000, disp=0)
+}
+Key
+{
+	0:ENGINE(step=2000)
+	1:ENGINE(step=-2000)
+	2:HANDW(step=-5)
+	3:HANDE(step=-5)
+	4:BEHEAD(step=1)
+}
+Body
+{
+	Core(){
+		N:Chip(angle=30, name=HEAD){
+			N:Jet(angle=-120, option=1, power=1000){}
+			S:Jet(angle=150, power=-POWER){}
+		}
+		E:Chip(){
+			N:Chip(angle=HANDE){N:Chip(){}}
+		}
+		W:Chip(){
+			N:Chip(angle=HANDW){N:Chip(){}}
+		}
+		S:Chip(){
+			E:Chip(){
+				S:Chip(angle=90){S:Chip(){
+					S:Chip(angle=-90){S:Chip(){}}
+				}}
+			}
+			W:Chip(){
+				S:Chip(angle=90){S:Chip(){
+					S:Chip(angle=-90){S:Chip(){}}
+				}}
+			}
+			S:Jet(angle=90, power=-ENGINE){
+				W:Jet(angle=150, option=1){}
+				E:Jet(angle=150, option=1){}
+			}
+			S:ARM(angle=135){}
+		}
+	}
+}
+Lua
+{
+	oldbh = 0
+
+	function main()
+		if BEHEAD == 1 and oldbh == 0 then
+			POWER = 30000
+			_SPLIT(HEAD)
+		end
+		oldbh = BEHEAD
+	end
+}

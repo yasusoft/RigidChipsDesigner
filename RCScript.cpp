@@ -94,6 +94,12 @@ AnsiString TRCScript::Symbol()
 
   if (PC >= Length) return "";
 
+  if (Script[PC] == '$')
+  {
+    PC ++;
+    SkipSP();
+  }
+
   if ('0' <= Script[PC] && Script[PC] <= '9' || Script[PC] == '.')
   { // ”’l
     AnsiString d;
@@ -710,6 +716,38 @@ AnsiString TRCScript::Factor(bool run)
       {
         Expression(run);
         val = "";
+      }
+      else if (symup == "_BASE")
+      {
+        val = "30";
+      }
+      else if (symup == "_PLAYERS" || symup == "_PLAYERHOSTID" || symup == "_PLAYERMYID")
+      {
+        val = "0";
+      }
+      else if (symup == "_PLAYERID" || symup == "_PLAYERCHIPS" || symup == "_PLAYERARMS" || symup == "_PLAYERCOLOR" || symup == "_PLAYERCRUSHES" || symup == "_PLAYERRESETS" || symup == "_PLAYERINITS" || symup == "_PLAYERYFORCES"
+       || symup == "_PLAYERX" || symup == "_PLAYERY" || symup == "_PLAYERZ")
+      {
+        Expression(run);
+        val = "0";
+      }
+      else if (symup == "_PLAYERNAME")
+      {
+        Expression(run);
+        val = "";
+      }
+      else if (symup == "_PLAYERNAME2")
+      {
+        Expression(run);
+        Expect(",");
+        Expression(run);
+        val = "";
+      }
+      else if (symup == "_FUEL" || symup == "_FUELMAX")
+      {
+        if (!Expect(")", false, true))
+          Expression(run);
+        val = "0";
       }
       else
         throw Exception("Unkwon function: " + sym);

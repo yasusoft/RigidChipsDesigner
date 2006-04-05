@@ -47,19 +47,20 @@ void __fastcall TForm1::WMDropFiles(TWMDropFiles &Msg)
     if (Modify)
       return;
 
+    TRigidChipCore *core = RCDLoader->LoadFromFile(filename);
+    if (core == NULL)
+    {
+      Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "Error", MB_OK | MB_ICONERROR);
+      return;
+    }
     if (Core)
     {
       TRigidChip *c = Core;
       Origin = Core = NULL;
       delete c;
     }
+    Origin = Core = core;
 
-    Origin = Core = RCDLoader->Load(filename);
-    if (Core == NULL)
-    {
-      Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "エラー", MB_OK);
-      return;
-    }
     FileName = filename;
     Modify = false;
     PaintPanelMouseDown(NULL, mbMiddle, TShiftState(), 0, 0);
@@ -118,13 +119,13 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   if (pixelformat == 0)
   {
     Application->MessageBox("ChoosePixelFormat failed", "Error", MB_ICONERROR | MB_OK);
-    Close();
+    Application->Terminate();
     return;
   }
   if (SetPixelFormat(ghDC, pixelformat, &pfd) == FALSE)
   {
     Application->MessageBox("SetPixelFormat failed", "Error", MB_ICONERROR | MB_OK);
-    Close();
+    Application->Terminate();
     return;
   }
 
@@ -149,16 +150,21 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   GLfloat col0[] = {0, 0, 0, 1};
   GLfloat col1[] = {1, 1, 1, 1};
   glEnable(GL_LIGHTING);
+  glLightModelf(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+  glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, col1);
   // light0
   GLfloat pos0[] = {0, 0, 1000, 1};
   glLightfv(GL_LIGHT0, GL_AMBIENT, col1);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, col1);
+  glLightfv(GL_LIGHT0, GL_SPECULAR, col0);
   glLightfv(GL_LIGHT0, GL_POSITION, pos0);
   glEnable(GL_LIGHT0);
   // diffuse2
   GLfloat pos1[] = {0, 0, -1000, 1};
   glLightfv(GL_LIGHT1, GL_AMBIENT, col0);
   glLightfv(GL_LIGHT1, GL_DIFFUSE, col1);
+  glLightfv(GL_LIGHT1, GL_SPECULAR, col0);
   glLightfv(GL_LIGHT1, GL_POSITION, pos1);
   glEnable(GL_LIGHT1);
 
@@ -201,7 +207,7 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
   }
 
   DragAcceptFiles(Handle, true);
-  WM_RIGHTCHIP_LOAD = RegisterWindowMessage("WM_RIGHTCHIP_LOAD");
+  WM_RIGIDCHIP_LOAD = RegisterWindowMessage("WM_RIGIDCHIP_LOAD");
 
   TIniFile *ini = NULL;
   try
@@ -243,10 +249,10 @@ void __fastcall TForm1::FormCreate(TObject *Sender)
 
   if (ParamCount() >= 1 && FileExists(ParamStr(1)))
   {
-    Origin = Core = RCDLoader->Load(ParamStr(1));
+    Origin = Core = RCDLoader->LoadFromFile(ParamStr(1));
     if (Core == NULL)
     {
-      Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "エラー", MB_OK);
+      Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "Error", MB_OK | MB_ICONERROR);
     }
     else
     {
@@ -352,6 +358,12 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
   ListSouth->Items->Clear();
   Direction = rdCore;
 
+  if (PageControlBody->ActivePage == TabCowlEffect)
+    PageControlBody->ActivePage = TabOptions;
+
+  if (!Core) return;
+  Core->Select = NULL;
+
   TreeViewBody->Items->BeginUpdate();
   TreeViewBody->Items->Clear();
   TTreeNode *node = TreeViewBodyAdd(NULL, Core, chip);
@@ -371,9 +383,6 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
   }
   TreeViewBody->OnChange = TreeViewBodyChange;
   TreeViewBody->Items->EndUpdate();
-
-  if (!Core) return;
-  Core->Select = NULL;
 
   if (chip)
   {
@@ -405,13 +414,21 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
       if (list)
         list->Items->AddObject(IntToStr(i) + ":" + chip->SubChips[i]->GetTypeString() + "(" + chip->SubChips[i]->Options->CommaText + ")", (TObject*)chip->SubChips[i]);
     }
-    OptionsEditor->Strings->Assign(chip->Options);
+    //OptionsEditor->Strings->Assign(chip->Options);
+    OptionsEditor->Strings->Clear();
+    for (int i = 0; i < chip->Options->Count; i ++)
+    {
+      try {
+        OptionsEditor->Strings->Add(chip->Options->Strings[i]);
+      } catch (...) { }
+    }
     if (KeyShowVoidOptions->Checked)
     {
       bool core = chip->GetType() == ctCore;
       bool frame = chip->GetType() == ctFrame
              || chip->GetType() == ctRudderF
              || chip->GetType() == ctTrimF;
+      bool weight = chip->GetType() == ctWeight;
       bool wheel = chip->GetType() == ctWheel
              || chip->GetType() == ctRLW;
       bool jet = chip->GetType() == ctJet;
@@ -434,9 +451,9 @@ void __fastcall TForm1::SelectionChange(TRigidChip *chip)
       VOIDOPT("name");
       if (!core) VOIDOPT("damper");
       if (!core) VOIDOPT("spring");
-      if (wheel || jet) VOIDOPT("effect");
+      if (wheel || jet || cowl) VOIDOPT("effect");
       VOIDOPT("color");
-      if (frame || wheel || jet || arm || cowl) VOIDOPT("option");
+      if (frame || weight || wheel || jet || arm || cowl) VOIDOPT("option");
       if (wheel) VOIDOPT("brake");
       if (wheel || jet || arm) VOIDOPT("power");
       if (!core) VOIDOPT("angle");
@@ -503,9 +520,9 @@ void __fastcall TForm1::Display()
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
-    glTranslated(-camera_x, -camera_y, -camera_z);
-    glRotated(camera_angleV, 1, 0, 0);
-    glRotated(camera_angleH, 0, 0, 1);
+    glTranslatef(-camera_x, -camera_y, -camera_z);
+    glRotatef(camera_angleV, 1, 0, 0);
+    glRotatef(camera_angleH, 0, 0, 1);
 
     Origin->Draw();
     Origin->DrawTranslucent();
@@ -565,9 +582,9 @@ void __fastcall TForm1::Display()
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
-  glTranslated(-camera_x, -camera_y, -camera_z);
-  glRotated(camera_angleV, 1, 0, 0);
-  glRotated(camera_angleH, 0, 0, 1);
+  glTranslatef(-camera_x, -camera_y, -camera_z);
+  glRotatef(camera_angleV, 1, 0, 0);
+  glRotatef(camera_angleH, 0, 0, 1);
 
   Core->CGravity[0] = Core->CGravity[1] = Core->CGravity[2] = Core->Weight = 0;
   Origin->Draw();
@@ -581,12 +598,15 @@ void __fastcall TForm1::Display()
     glPushMatrix();
     glLoadIdentity();
     glTranslatef(Core->CGravity[0], Core->CGravity[1], Core->CGravity[2]);
-    glRotated(camera_angleV, 1, 0, 0);
-    glRotated(camera_angleH, 0, 0, 1);
-    const float diffuse[4] = {0, 0, 0, 1};
+    glRotatef(camera_angleV, 1, 0, 0);
+    glRotatef(camera_angleH, 0, 0, 1);
+    const float zero[4] = {0, 0, 0, 1};
     const float ambient[4] = {0.5, 0.5, 0.5, 1};
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, zero);
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, zero);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, zero);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, zero);
     glBegin(GL_LINES);
     glVertex3f(-8,  0,  0);
     glVertex3f( 8,  0,  0);
@@ -905,7 +925,7 @@ void __fastcall TForm1::TimerReloadTimer(TObject *Sender)
     return;
   TimerReload->Tag = age;
   
-  TRigidChipCore *corenew = RCDLoader->Load(FileName);
+  TRigidChipCore *corenew = RCDLoader->LoadFromFile(FileName);
   if (corenew)
   {
     TRigidChipCore *coreback = Core;
@@ -976,10 +996,9 @@ void __fastcall TForm1::ComboTypeChange(TObject *Sender)
   }
 
   cap = "N:" + cap + "(){}";
-  TRigidChip *chip = RCDLoader->StringToChip(cap);
+  TRigidChip *chip = RCDLoader->StringToChip(cap, Core->Select->Parent);
   if (chip)
   {
-    Core->Select->Parent->AddSubChip(chip);
     chip->Direction = Core->Select->Direction;
     chip->SetOptions(Core->Select->Options->Text);
     for (int i = 0; i < Core->Select->SubChipsCount; i ++)
@@ -1047,6 +1066,11 @@ void __fastcall TForm1::OptionsEditorSelectCell(TObject *Sender, int ACol,
         OptionsEditor->ItemProps[ARow-1]->EditStyle = esPickList;
         OptionsEditor->ItemProps[ARow-1]->PickList->Text = "0\n1";
       }
+      else if (Core->Select->GetType() == ctWeight)
+      {
+        OptionsEditor->ItemProps[ARow-1]->EditStyle = esPickList;
+        OptionsEditor->ItemProps[ARow-1]->PickList->Text = "1\n2\n3\n4\n5\n6\n7\n8";
+      }
       else if (Core->Select->GetType() == ctWheel)
       {
         OptionsEditor->ItemProps[ARow-1]->EditStyle = esPickList;
@@ -1075,6 +1099,10 @@ void __fastcall TForm1::OptionsEditorSelectCell(TObject *Sender, int ACol,
         OptionsEditor->ItemProps[ARow-1]->EditStyle = esPickList;
         OptionsEditor->ItemProps[ARow-1]->PickList->Text = "0\n1";
       }
+      else if (Core->Select->GetType() == ctCowl)
+      {
+        OptionsEditor->ItemProps[ARow-1]->EditStyle = esEllipsis;
+      }
     }
     else if (key == "spring" || key == "damper")
     {
@@ -1088,8 +1116,17 @@ void __fastcall TForm1::OptionsEditorEditButtonClick(TObject *Sender)
 {
   if (!Core || !Core->Select) return;
 
+  if (OptionsEditor->Keys[OptionsEditor->Row].LowerCase() == "effect")
+  {
+    ComboCowlEffect->Text = OptionsEditor->Values["effect"];
+    ComboCowlEffectChange(ComboCowlEffect);
+    PageControlBody->ActivePage = TabCowlEffect;
+    return;
+  }
+
   if (OptionsEditor->Keys[OptionsEditor->Row].LowerCase() != "color")
     return;
+
   double d = 0xFFFFFF;
   Core->StrToDouble(OptionsEditor->Values["color"], &d);
   int c = d;
@@ -1110,6 +1147,33 @@ void __fastcall TForm1::OptionsEditorStringsChange(TObject *Sender)
   if (!Core || !Core->Select) return;
   Core->Select->SetOptions(OptionsEditor->Strings->CommaText);
   Modify = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::ComboCowlEffectChange(TObject *Sender)
+{
+  int effect;
+  if (Sender == ComboCowlEffect)
+  {
+    if (ComboCowlEffect->Text != "" && ComboCowlEffect->Text[1] == '#')
+      effect = StrToIntDef("0x"+ComboCowlEffect->Text.SubString(2, ComboCowlEffect->Text.Length()),0x00FB);
+    else
+      effect = ComboCowlEffect->Text.ToIntDef(0x00FB);
+
+    ComboCowlTrans->ItemIndex     = (effect >> 12) & 0xF;
+    ComboCowlEmissive->ItemIndex  = (effect >>  8) & 0xF;
+    ComboCowlShininess->ItemIndex = (effect >>  4) & 0xF;
+    ComboCowlSpecular->ItemIndex  =  effect        & 0xF;
+  }
+  else
+  {
+    effect = 0;
+    effect <<= 4; effect |= ComboCowlTrans->ItemIndex;
+    effect <<= 4; effect |= ComboCowlEmissive->ItemIndex;
+    effect <<= 4; effect |= ComboCowlShininess->ItemIndex;
+    effect <<= 4; effect |= ComboCowlSpecular->ItemIndex;
+    ComboCowlEffect->Text = "#" + IntToHex(effect, 4);
+  }
+  OptionsEditor->Values["effect"] = ComboCowlEffect->Text;
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::MemoChipChange(TObject *Sender)
@@ -1140,6 +1204,7 @@ void __fastcall TForm1::PopupMenuOptionsPopup(TObject *Sender)
   bool frame = Core->Select->GetType() == ctFrame
          || Core->Select->GetType() == ctRudderF
          || Core->Select->GetType() == ctTrimF;
+  bool weight = Core->Select->GetType() == ctWeight;
   bool wheel = Core->Select->GetType() == ctWheel
          || Core->Select->GetType() == ctRLW;
   bool jet = Core->Select->GetType() == ctJet;
@@ -1148,9 +1213,9 @@ void __fastcall TForm1::PopupMenuOptionsPopup(TObject *Sender)
   KeyOptionsAngle->Visible = OptionsEditor->Strings->IndexOfName("angle") == -1 && !core;
   KeyOptionsPower->Visible = OptionsEditor->Strings->IndexOfName("power") == -1 && (wheel || jet || arm);
   KeyOptionsBrake->Visible = OptionsEditor->Strings->IndexOfName("brake") == -1 && wheel;
-  KeyOptionsOption->Visible = OptionsEditor->Strings->IndexOfName("option") == -1 && (frame || wheel || jet || arm || cowl);
+  KeyOptionsOption->Visible = OptionsEditor->Strings->IndexOfName("option") == -1 && (frame || weight || wheel || jet || arm || cowl);
   KeyOptionsColor->Visible = OptionsEditor->Strings->IndexOfName("color") == -1;
-  KeyOptionsEffect->Visible = OptionsEditor->Strings->IndexOfName("effect") == -1 && (wheel || jet);
+  KeyOptionsEffect->Visible = OptionsEditor->Strings->IndexOfName("effect") == -1 && (wheel || jet || cowl);
   KeyOptionsSpring->Visible = OptionsEditor->Strings->IndexOfName("spring") == -1 && !core;
   KeyOptionsDamper->Visible = OptionsEditor->Strings->IndexOfName("damper") == -1 && !core;
   KeyOptionsName->Visible = OptionsEditor->Strings->IndexOfName("name") == -1;
@@ -1226,6 +1291,11 @@ void __fastcall TForm1::KeyAboutClick(TObject *Sender)
   EditKeyTest->SetFocus();
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::KeyFileClick(TObject *Sender)
+{
+  KeyLoadClipboard->Enabled = Clipboard()->HasFormat(CF_TEXT);
+}
+//---------------------------------------------------------------------------
 void __fastcall TForm1::KeyNewClick(TObject *Sender)
 {
   if (Modify)
@@ -1274,19 +1344,20 @@ void __fastcall TForm1::KeyOpenClick(TObject *Sender)
   OpenDialog->FileName = "*.rcd;*.txt";
   if (OpenDialog->Execute())
   {
+    TRigidChipCore *core = RCDLoader->LoadFromFile(OpenDialog->FileName);
+    if (core == NULL)
+    {
+      Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "Error", MB_OK | MB_ICONERROR);
+      return;
+    }
     if (Core)
     {
       TRigidChip *c = Core;
       Origin = Core = NULL;
       delete c;
     }
+    Origin = Core = core;
 
-    Origin = Core = RCDLoader->Load(OpenDialog->FileName);
-    if (Core == NULL)
-    {
-      Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "エラー", MB_OK);
-      return;
-    }
     FileName = OpenDialog->FileName;
     Modify = false;
     PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
@@ -1342,6 +1413,46 @@ void __fastcall TForm1::KeySaveAsClick(TObject *Sender)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::KeyLoadClipboardClick(TObject *Sender)
+{
+  if (!Clipboard()->HasFormat(CF_TEXT))
+    return;
+
+  if (Modify)
+    switch (Application->MessageBox("Data is modified.\nDo you want to save?", "Modified", MB_YESNOCANCEL | MB_ICONQUESTION))
+    {
+      case IDYES:
+        KeySaveClick(Sender);
+        if (Modify)
+          return;
+        break;
+      case IDCANCEL:
+        return;
+    }
+  
+  TRigidChipCore *core = RCDLoader->LoadFromString(Clipboard()->AsText);
+  if (core == NULL)
+  {
+    Application->MessageBox(RCDLoader->ErrorMessage.c_str(), "Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+  if (Core)
+  {
+    TRigidChip *c = Core;
+    Origin = Core = NULL;
+    delete c;
+  }
+  Origin = Core = core;
+
+  FileName = "";
+  Modify = false;
+  PaintPanelMouseDown(Sender, mbMiddle, TShiftState(), 0, 0);
+  ScriptOut->Clear();
+  LuaOut->Clear();
+  RunScript = false;
+  RunLua = false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TForm1::KeyImportClick(TObject *Sender)
 {
   KeyNewClick(Sender);
@@ -1358,10 +1469,10 @@ void __fastcall TForm1::KeyRCLoadClick(TObject *Sender)
 {
   if (FileName != "")
   {
-    PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_START, 0);
+    PostMessage(HWND_BROADCAST, WM_RIGIDCHIP_LOAD, UMSG_RCLOAD_START, 0);
     for (int i = 1; i <= FileName.Length(); i ++)
-      PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_CHAR, FileName[i] & 0xFF);
-    PostMessage(HWND_BROADCAST, WM_RIGHTCHIP_LOAD, UMSG_RCLOAD_END, 0);
+      PostMessage(HWND_BROADCAST, WM_RIGIDCHIP_LOAD, UMSG_RCLOAD_CHAR, FileName[i] & 0xFF);
+    PostMessage(HWND_BROADCAST, WM_RIGIDCHIP_LOAD, UMSG_RCLOAD_END, 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -1478,7 +1589,7 @@ void __fastcall TForm1::KeyPasteClick(TObject *Sender)
     return;
   if (!Clipboard()->HasFormat(CF_TEXT))
     return;
-  TRigidChip *chip = RCDLoader->StringToChip(Clipboard()->AsText, Sender == KeyPasteDirection && Direction != rdCore ? NULL : Core->Select);
+  TRigidChip *chip = RCDLoader->StringToChip(Clipboard()->AsText, Core->Select);
   if (chip == NULL)
   {
     if (RCDLoader->ErrorMessage != "")
@@ -1486,16 +1597,7 @@ void __fastcall TForm1::KeyPasteClick(TObject *Sender)
     return;
   }
   if (Sender == KeyPasteDirection && Direction != rdCore)
-  {
-    if (Core->Select->GetType() == ctCowl && chip->GetType() != ctCowl)
-    {
-      Application->MessageBox(("Can't join " + chip->GetTypeString() + " to cowl").c_str(), "cowl", MB_ICONERROR | MB_OK);
-      delete chip;
-      return;
-    }
     ChangeDirection(chip, Direction);
-    Core->Select->AddSubChip(chip);
-  }
   if (KeySelectAdd->Checked)
     SelectionChange(chip);
   else
@@ -1566,9 +1668,9 @@ bool ConvertCowl(TRigidChip *chip)
   for (int i = chip->SubChipsCount-1; i >= 0; i --)
     chip->DelSubChip(i);
 
-  if (chip->GetType() == ctChip || chip->GetType() == ctWeight)
-    cowl->Options->Values["option"] = "0";
-  else if (chip->GetType() == ctFrame)
+  //if (chip->GetType() == ctChip || chip->GetType() == ctWeight)
+  //  cowl->Options->Values["option"] = "0";
+  if (chip->GetType() == ctFrame)
     cowl->Options->Values["option"] = "1";
 
   delete chip;
@@ -1642,12 +1744,11 @@ void __fastcall TForm1::KeyAddChipClick(TObject *Sender)
   }
 
   cap = "N:" + cap + "(){}";
-  TRigidChip *chip = RCDLoader->StringToChip(cap);
+  TRigidChip *chip = RCDLoader->StringToChip(cap, Core->Select);
   if (chip)
   {
     if (Direction != rdCore)
       chip->Direction = Direction;
-    Core->Select->AddSubChip(chip);
     Modify = true;
   }
   if (KeySelectAdd->Checked)
@@ -1676,10 +1777,9 @@ void __fastcall TForm1::ButtonPlusClick(TObject *Sender)
   }
 
   t = "N:" + t + "(){}";
-  TRigidChip *chip = RCDLoader->StringToChip(t);
+  TRigidChip *chip = RCDLoader->StringToChip(t, Core->Select->Parent);
   if (chip)
   {
-    Core->Select->Parent->AddSubChip(chip);
     chip->Direction = Core->Select->Direction;
     if (copy)
     {
@@ -1740,6 +1840,7 @@ void __fastcall TForm1::ListNorthClick(TObject *Sender)
 void __fastcall TForm1::TreeViewBodyChange(TObject *Sender,
       TTreeNode *Node)
 {
+  if (!Core) return;
   SelectionChange((TRigidChip*)Node->Data);
 }
 //---------------------------------------------------------------------------
@@ -1856,6 +1957,7 @@ void __fastcall TForm1::ButtonVarOkClick(TObject *Sender)
   var->FlagStep = EditVarStep->Text != "";
   var->Step = StrToFloatDef(EditVarStep->Text, 0);
   var->Disp = CheckVarDisp->Checked;
+  var->Value = var->Default;
 
   Modify = true;
   PageControlRightChange(Sender);

@@ -8,23 +8,22 @@ class TRigidChipCore;
 class TRCDLoader
 {
 private:
-        void skipsp(int fp);
-        AnsiString readto(int fp, char to);
-        AnsiString readcomment(int fp);
-        AnsiString readkey(int fp);
-        TRigidChip* procval(int fp, TRigidChipCore *core);
-        TRigidChip* prockey(int fp, TRigidChipCore *core);
-        TRigidChip* procbody(int fp, TRigidChip *core);
+        void skipsp(TStream *stream);
+        AnsiString readto(TStream *stream, char to);
+        AnsiString readcomment(TStream *stream);
+        AnsiString readkey(TStream *stream);
 
-        void skipsp(TStringStream *stream);
-        AnsiString readto(TStringStream *stream, char to);
-        bool skipcomment(TStringStream *stream);
-        AnsiString readkey(TStringStream *stream);
+        TRigidChip* readchips(TStream *stream, TRigidChip *addto);
+        TRigidChip* procval(TStream *stream, TRigidChipCore *core);
+        TRigidChip* prockey(TStream *stream, TRigidChipCore *core);
+        TRigidChip* procbody(TStream *stream, TRigidChip *core);
+        TRigidChipCore* load(TStream *stream);
 public:
         AnsiString ErrorMessage;
-        TRigidChipCore* Load(AnsiString filename);
+        TRigidChipCore* LoadFromFile(AnsiString filename);
+        TRigidChipCore* LoadFromString(AnsiString str);
 
-        TRigidChip* StringToChip(AnsiString str, TRigidChip *addto = NULL);
+        TRigidChip* StringToChip(AnsiString str, TRigidChip *addto);
 };
 //---------------------------------------------------------------------------
 #endif

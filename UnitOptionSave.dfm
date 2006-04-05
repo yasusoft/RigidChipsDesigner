@@ -129,6 +129,30 @@ object FormOptionSave: TFormOptionSave
     Font.Name = #65325#65331' '#12468#12471#12483#12463
     Font.Style = []
     ImeMode = imDisable
+    Lines.Strings = (
+      '// Preview Model'
+      '// This is ModelMemo'
+      'Val{'
+      ' VAR1(default=123,max=1234)'
+      ' VAR2(default=123,max=1234)'
+      '}'
+      'Key{'
+      ' 0:VAR1(step=5),VAR2(step=5)'
+      ' 1:VAR1(step=-5),VAR2(step=-5)'
+      '}'
+      'Body{'
+      ' // kore wa core'
+      ' Core(){'
+      '  // this is ChipMemo for hoge'
+      '  S:Chip(angle=90,name=hoge){'
+      '   // cooooowl'
+      '   Cowl(angle=VAR1){}'
+      '   // jeeeeet'
+      '   // balooooon'
+      '   W:Jet(power=VAR2,option=1){}'
+      '  }'
+      ' }'
+      '}')
     ParentFont = False
     ReadOnly = True
     ScrollBars = ssBoth

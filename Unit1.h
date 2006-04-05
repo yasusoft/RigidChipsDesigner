@@ -206,6 +206,17 @@ __published:	// IDE 管理のコンポーネント
         TMemo *MemoModel;
         TTreeView *TreeViewBody;
         TButton *ButtonSwitch;
+        TMenuItem *KeyLoadClipboard;
+        TTabSheet *TabCowlEffect;
+        TComboBox *ComboCowlEffect;
+        TLabel *LabelCowlTrans;
+        TComboBox *ComboCowlTrans;
+        TLabel *LabelCowlEmissive;
+        TComboBox *ComboCowlEmissive;
+        TLabel *LabelCowlShininess;
+        TComboBox *ComboCowlShininess;
+        TLabel *LabelCowlSpecular;
+        TComboBox *ComboCowlSpecular;
         void __fastcall FormCreate(TObject *Sender);
         void __fastcall PaintPanelPaint(TObject *Sender);
         void __fastcall PaintPanelMouseDown(TObject *Sender, TMouseButton Button,
@@ -294,6 +305,9 @@ __published:	// IDE 管理のコンポーネント
         void __fastcall ButtonSwitchClick(TObject *Sender);
         void __fastcall TreeViewBodyChange(TObject *Sender,
           TTreeNode *Node);
+        void __fastcall KeyLoadClipboardClick(TObject *Sender);
+        void __fastcall KeyFileClick(TObject *Sender);
+        void __fastcall ComboCowlEffectChange(TObject *Sender);
 private:	// ユーザー宣言
         HGLRC ghRC; // レンダリングコンテキスト
         HDC   ghDC; // デバイスコンテキスト
@@ -305,15 +319,15 @@ private:	// ユーザー宣言
 
         bool PickUp;
         int PickUpX, PickUpY;
-        double camera_x, camera_y, camera_z; // カメラ座標
-        double camera_angleH, camera_angleV;
-        double def_cx, def_cy, def_cz;
-        double def_caH, def_caV;
+        float camera_x, camera_y, camera_z; // カメラ座標
+        float camera_angleH, camera_angleV;
+        float def_cx, def_cy, def_cz;
+        float def_caH, def_caV;
 
         bool mouse_left, mouse_right; // マウス投下中？
         int mouse_x, mouse_y; // 投下開始マウス位置
-        double mouse_cx, mouse_cy, mouse_cz; // 投下時カメラ座標
-        double mouse_caH, mouse_caV;
+        float mouse_cx, mouse_cy, mouse_cz; // 投下時カメラ座標
+        float mouse_caH, mouse_caV;
 
         bool RunScript, RunLua;
         TRCLua *RCLua;
@@ -340,7 +354,7 @@ private:	// ユーザー宣言
         }
         __property bool Modify = {read=FModify, write=SetModify};
 
-        UINT WM_RIGHTCHIP_LOAD;
+        UINT WM_RIGIDCHIP_LOAD;
         enum { UMSG_RCLOAD_START = 0, UMSG_RCLOAD_CHAR = 1, UMSG_RCLOAD_END = 2 };
 protected:
 	void __fastcall WMDropFiles(TWMDropFiles &Msg);
